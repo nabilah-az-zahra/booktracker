@@ -1,0 +1,75 @@
+package handlers
+
+import (
+	"booktracker/backend/internal/models"
+	"booktracker/backend/internal/services"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
+
+type AuthHandler struct {
+	authService *services.AuthService
+}
+
+func NewAuthHandler(authService *services.AuthService) *AuthHandler {
+	return &AuthHandler{authService: authService}
+}
+
+func (h *AuthHandler) Register(c *gin.Context) {
+	var req models.RegisterRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	response, err := h.authService.Register(req)
+	if err != nil {
+		c.JSON(http.StatusConflict, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, response)
+}
+
+func (h *AuthHandler) Login(c *gin.Context) {
+	var req models.LoginRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	response, err := h.authService.Login(req)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+func (h *AuthHandler) GetProfile(c *gin.Context) {
+	userID := c.GetString("userID")
+	user, err := h.authService.GetProfile(userID)
+	if err != nil {
+		handleServiceError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, user)
+}
+
+func (h *AuthHandler) UpdateGoal(c *gin.Context) {
+	userID := c.GetString("userID")
+	var req models.UpdateGoalRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	if err := h.authService.UpdateGoal(userID, req.YearlyGoal); err != nil {
+		handleServiceError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "goal updated successfully"})
+}

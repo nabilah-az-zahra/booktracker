@@ -1,0 +1,40 @@
+.env
+.env.local
+.env.production
+.env.*.local
+
+# Docker volumes
+postgres_data/
+
+# OS files
+.DS_Store
+.DS_Store?
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Go
+backend/main
+backend/*.exe
+backend/*.out
+backend/tmp/
+
+# Node
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/.vite/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Test coverage
+coverage/
+*.coverage

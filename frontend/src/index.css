@@ -1,0 +1,97 @@
+@import 'tailwindcss';
+
+@font-face {
+    font-family: 'Mozilla';
+    src: url('./assets/fonts/MozillaHeadline-Regular.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@theme {
+    --color-bt-dark: #1c1612;
+    --color-bt-gold: #c9a96e;
+    --color-bt-cream: #faf7f4;
+    --color-bt-surface: #ffffff;
+    --color-bt-warm: #6b5c4e;
+    --color-bt-muted: #9c8b7a;
+    --color-bt-border: #ede8e3;
+    --color-bt-success: #4a7c59;
+    --color-bt-success-bg: #f0f9f0;
+    --color-bt-danger: #e07070;
+    --color-bt-danger-bg: #fdf2f2;
+
+    --font-serif: 'Mozilla', 'Georgia', serif;
+}
+
+* {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+    font-family: var(--font-serif);
+    background-color: var(--color-bt-cream);
+    color: var(--color-bt-dark);
+}
+
+.input-field {
+    background-color: var(--color-bt-surface);
+    border: 1.5px solid var(--color-bt-border);
+    color: var(--color-bt-dark);
+    border-radius: 8px;
+    transition: border-color 0.2s ease;
+}
+
+.input-field:focus {
+    border-color: var(--color-bt-gold);
+    outline: none;
+}
+
+.hero-container > * {
+    animation: fade-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    opacity: 0;
+}
+.hero-container > *:nth-child(1) {
+    animation-delay: 0.1s;
+}
+.hero-container > *:nth-child(2) {
+    animation-delay: 0.2s;
+}
+.hero-container > *:nth-child(3) {
+    animation-delay: 0.3s;
+}
+.hero-container > *:nth-child(4) {
+    animation-delay: 0.4s;
+}
+
+.reveal-child {
+    opacity: 0;
+    transform: translateY(20px);
+    transition:
+        opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+        transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.is-revealed .reveal-child {
+    opacity: 1;
+    transform: translateY(0);
+}
+.is-revealed .reveal-child:nth-child(2) {
+    transition-delay: 0.1s;
+}
+.is-revealed .reveal-child:nth-child(3) {
+    transition-delay: 0.2s;
+}
+.is-revealed .reveal-child:nth-child(4) {
+    transition-delay: 0.3s;
+}
+
+@keyframes fade-up {
+    from {
+        opacity: 0;
+        transform: translateY(24px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
