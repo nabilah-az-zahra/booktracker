@@ -6,67 +6,77 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"golang.org/x/time/rate"
 )
 
-type visitor struct {
-	limiter  *rate.Limiter
-	lastSeen time.Time
+type requestLog struct {
+	count       int
+	windowStart time.Time
 }
 
-type ipRateLimiter struct {
-	visitors map[string]*visitor
+type rateLimiter struct {
 	mu       sync.Mutex
-	rate     rate.Limit
-	burst    int
+	requests map[string]*requestLog
+	limit    int
+	window   time.Duration
 }
 
-func newIPRateLimiter(r rate.Limit, burst int) *ipRateLimiter {
-	rl := &ipRateLimiter{
-		visitors: make(map[string]*visitor),
-		rate:     r,
-		burst:    burst,
+func newRateLimiter(limit int, window time.Duration) *rateLimiter {
+	rl := &rateLimiter{
+		requests: make(map[string]*requestLog),
+		limit:    limit,
+		window:   window,
 	}
-	go rl.cleanupVisitors()
+	go rl.cleanup()
 	return rl
 }
 
-func (rl *ipRateLimiter) getVisitor(ip string) *rate.Limiter {
+func (rl *rateLimiter) allow(ip string) bool {
 	rl.mu.Lock()
 	defer rl.mu.Unlock()
 
-	v, exists := rl.visitors[ip]
-	if !exists {
-		limiter := rate.NewLimiter(rl.rate, rl.burst)
-		rl.visitors[ip] = &visitor{limiter, time.Now()}
-		return limiter
+	now := time.Now()
+	log, exists := rl.requests[ip]
+
+	if !exists || now.Sub(log.windowStart) > rl.window {
+		rl.requests[ip] = &requestLog{count: 1, windowStart: now}
+		return true
 	}
 
-	v.lastSeen = time.Now()
-	return v.limiter
+	if log.count >= rl.limit {
+		return false
+	}
+
+	log.count++
+	return true
 }
 
-func (rl *ipRateLimiter) cleanupVisitors() {
+func (rl *rateLimiter) cleanup() {
 	for {
 		time.Sleep(5 * time.Minute)
 		rl.mu.Lock()
-		for ip, v := range rl.visitors {
-			if time.Since(v.lastSeen) > 10*time.Minute {
-				delete(rl.visitors, ip)
+		now := time.Now()
+		for ip, log := range rl.requests {
+			if now.Sub(log.windowStart) > rl.window*2 {
+				delete(rl.requests, ip)
 			}
 		}
 		rl.mu.Unlock()
 	}
 }
 
-var authLimiter = newIPRateLimiter(rate.Every(time.Minute/5), 5)
+var authRL = newRateLimiter(5, time.Minute)
 
 func AuthRateLimiter() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		ip := c.ClientIP()
-		limiter := authLimiter.getVisitor(ip)
+		ip := c.GetHeader("X-Forwarded-For")
+		if ip == "" {
+			ip = c.GetHeader("X-Real-IP")
+		}
+		if ip == "" {
+			ip = c.ClientIP()
+		}
 
-		if !limiter.Allow() {
+		if !authRL.allow(ip) {
 			c.JSON(http.StatusTooManyRequests, gin.H{
 				"message": "too many requests, please try again later",
 			})
