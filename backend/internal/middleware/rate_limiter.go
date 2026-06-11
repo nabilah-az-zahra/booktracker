@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"log"
 	"net/http"
 	"sync"
 	"time"
@@ -67,23 +68,26 @@ func (rl *rateLimiter) cleanup() {
 var authRL = newRateLimiter(5, time.Minute)
 
 func AuthRateLimiter() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		ip := c.GetHeader("X-Forwarded-For")
-		if ip == "" {
-			ip = c.GetHeader("X-Real-IP")
-		}
-		if ip == "" {
-			ip = c.ClientIP()
-		}
+    return func(c *gin.Context) {
+        ip := c.GetHeader("X-Forwarded-For")
+        if ip == "" {
+            ip = c.GetHeader("X-Real-IP")
+        }
+        if ip == "" {
+            ip = c.ClientIP()
+        }
 
-		if !authRL.allow(ip) {
-			c.JSON(http.StatusTooManyRequests, gin.H{
-				"message": "too many requests, please try again later",
-			})
-			c.Abort()
-			return
-		}
+        allowed := authRL.allow(ip)
+        log.Printf("RateLimit: ip=%s allowed=%v count=%d", ip, allowed, authRL.requests[ip].count)
 
-		c.Next()
-	}
+        if !allowed {
+            c.JSON(http.StatusTooManyRequests, gin.H{
+                "message": "too many requests, please try again later",
+            })
+            c.Abort()
+            return
+        }
+
+        c.Next()
+    }
 }
