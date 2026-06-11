@@ -56,6 +56,7 @@ func main() {
 	api := r.Group("/api")
 	{
 		auth := api.Group("/auth")
+		auth.Use(middleware.AuthRateLimiter())
 		{
 			auth.POST("/register", authHandler.Register)
 			auth.POST("/login", authHandler.Login)
