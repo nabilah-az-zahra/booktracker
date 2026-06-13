@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import type { User } from '../types'
 import { AuthContext } from './AuthContext'
 import type { AuthContextType } from '../types/authTypes'
+import api from '../api/axios'
 
 interface AuthState {
     user: User | null
@@ -57,7 +58,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         dispatch({ type: 'LOGIN', token, user })
     }, [])
 
-    const logout = useCallback(() => {
+    const logout = useCallback(async () => {
+        try {
+            await api.post('/api/auth/logout')
+        } catch {
+            //
+        }
         localStorage.removeItem('token')
         localStorage.removeItem('user')
         dispatch({ type: 'LOGOUT' })

@@ -39,7 +39,10 @@ func main() {
 	sessionHandler := handlers.NewSessionHandler(sessionService)
 	statsHandler := handlers.NewStatsHandler(statsService)
 
-	r := gin.Default()
+	r := gin.New()
+	r.Use(gin.Logger())
+	r.Use(gin.Recovery())
+	r.SetTrustedProxies(nil)
 
 	allowedOrigin := os.Getenv("ALLOWED_ORIGIN")
 	if allowedOrigin == "" {
@@ -60,6 +63,8 @@ func main() {
 		{
 			auth.POST("/register", authHandler.Register)
 			auth.POST("/login", authHandler.Login)
+			auth.POST("/refresh", authHandler.Refresh)
+			auth.POST("/logout", authHandler.Logout)
 		}
 
 		protected := api.Group("/")

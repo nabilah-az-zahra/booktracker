@@ -4,6 +4,8 @@ import (
 	"booktracker/backend/internal/models"
 	"booktracker/backend/internal/services"
 	"net/http"
+	"os"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -39,13 +41,39 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	response, err := h.authService.Login(req)
+	response, refreshToken, err := h.authService.Login(req)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"message": err.Error()})
 		return
 	}
 
+	setRefreshCookie(c, refreshToken)
 	c.JSON(http.StatusOK, response)
+}
+
+func (h *AuthHandler) Refresh(c *gin.Context) {
+	refreshToken, err := c.Cookie("refresh_token")
+	if err != nil || refreshToken == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "refresh token required"})
+		return
+	}
+
+	response, newRefreshToken, err := h.authService.RefreshToken(refreshToken)
+	if err != nil {
+		clearRefreshCookie(c)
+		c.JSON(http.StatusUnauthorized, gin.H{"message": err.Error()})
+		return
+	}
+
+	setRefreshCookie(c, newRefreshToken)
+	c.JSON(http.StatusOK, response)
+}
+
+func (h *AuthHandler) Logout(c *gin.Context) {
+	refreshToken, _ := c.Cookie("refresh_token")
+	h.authService.Logout(refreshToken)
+	clearRefreshCookie(c)
+	c.JSON(http.StatusOK, gin.H{"message": "logged out"})
 }
 
 func (h *AuthHandler) GetProfile(c *gin.Context) {
@@ -72,4 +100,30 @@ func (h *AuthHandler) UpdateGoal(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "goal updated successfully"})
+}
+
+func setRefreshCookie(c *gin.Context, token string) {
+	secure := os.Getenv("GO_ENV") == "production"
+	c.SetCookie(
+		"refresh_token",
+		token,
+		int(30*24*time.Hour/time.Second),
+		"/",
+		"",
+		secure,
+		true,
+	)
+}
+
+func clearRefreshCookie(c *gin.Context) {
+	secure := os.Getenv("GO_ENV") == "production"
+	c.SetCookie(
+		"refresh_token",
+		"",
+		-1,
+		"/",
+		"",
+		secure,
+		true,
+	)
 }

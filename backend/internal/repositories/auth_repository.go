@@ -3,6 +3,7 @@ package repositories
 import (
 	"booktracker/backend/internal/models"
 	"database/sql"
+	"time"
 )
 
 type AuthRepository struct {
@@ -63,6 +64,48 @@ func (r *AuthRepository) UpdateYearlyGoal(userID string, goal int) error {
 	_, err := r.db.Exec(
 		`UPDATE users SET yearly_goal = $1 WHERE id = $2`,
 		goal, userID,
+	)
+	return err
+}
+
+func (r *AuthRepository) CreateRefreshToken(userID, token string, expiresAt time.Time) error {
+	_, err := r.db.Exec(
+		`INSERT INTO refresh_tokens (user_id, token, expires_at) 
+		VALUES ($1, $2, $3)`,
+		userID, token, expiresAt,
+	)
+	return err
+}
+
+func (r *AuthRepository) GetRefreshToken(token string) (*models.RefreshToken, error) {
+	rt := &models.RefreshToken{}
+	err := r.db.QueryRow(
+		`SELECT id, user_id, token, expires_at, created_at
+		FROM refresh_tokens WHERE token = $1 AND expires_at > NOW()`,
+		token,
+	).Scan(&rt.ID, &rt.UserID, &rt.Token, &rt.ExpiresAt, &rt.CreatedAt)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return rt, nil
+}
+
+func (r *AuthRepository) DeleteRefreshToken(token string) error {
+	_, err := r.db.Exec(
+		`DELETE FROM refresh_tokens WHERE token = $1`,
+		token,
+	)
+	return err
+
+}
+
+func (r *AuthRepository) DeleteAllRefreshToken(userID string) error {
+	_, err := r.db.Exec(
+		`DELETE FROM refresh_tokens WHERE user_id = $1`,
+		userID,
 	)
 	return err
 }

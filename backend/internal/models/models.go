@@ -44,10 +44,18 @@ type ReadingProgress struct {
 	UpdatedAt   time.Time `json:"updated_at"`
 }
 
+type RefreshToken struct {
+	ID 			string `json:"id"`
+	UserID 		string `json:"user_id"`
+	Token 		string `json:"token"`
+	ExpiresAt 	time.Time `json:"expires_at"`
+	CreatedAt 	time.Time `json:"created_at"`
+}
+
 type RegisterRequest struct {
 	Name     string `json:"name" binding:"required"`
 	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required,min=8"`
+	Password string `json:"password" binding:"required,min=8,max=72"`
 }
 
 type LoginRequest struct {
