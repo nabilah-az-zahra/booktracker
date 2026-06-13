@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"log"
 	"net/http"
 	"sync"
 	"time"
@@ -77,10 +76,7 @@ func AuthRateLimiter() gin.HandlerFunc {
             ip = c.ClientIP()
         }
 
-        allowed := authRL.allow(ip)
-        log.Printf("RateLimit: ip=%s allowed=%v count=%d", ip, allowed, authRL.requests[ip].count)
-
-        if !allowed {
+        if !authRL.allow(ip) {
             c.JSON(http.StatusTooManyRequests, gin.H{
                 "message": "too many requests, please try again later",
             })
