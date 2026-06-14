@@ -1,10 +1,13 @@
 package middleware
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
 	"strings"
+
+	redisclient "booktracker/backend/internal/redis"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -34,6 +37,17 @@ func AuthMiddleware() gin.HandlerFunc {
 		}
 
 		tokenString := parts[1]
+
+		blacklisted, err := redisclient.Client.Exists(
+			context.Background(),
+			"blacklist:"+tokenString,
+		).Result()
+		if err == nil && blacklisted > 0 {
+			c.JSON(http.StatusUnauthorized, gin.H{"message": "invalid or expired token"})
+			c.Abort()
+			return
+		}
+
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
@@ -62,6 +76,8 @@ func AuthMiddleware() gin.HandlerFunc {
 		}
 
 		c.Set("userID", claims["user_id"])
+		c.Set("tokenString", tokenString)
+		c.Set("tokenClaims", claims)
 		c.Next()
 	}
 }

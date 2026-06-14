@@ -70,8 +70,14 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 }
 
 func (h *AuthHandler) Logout(c *gin.Context) {
+	accessToken := ""
+	authHeader := c.GetHeader("Authorization")
+	if len(authHeader) > 7 && authHeader[:7] == "Bearer " {
+		accessToken = authHeader[7:]
+	}
+
 	refreshToken, _ := c.Cookie("refresh_token")
-	h.authService.Logout(refreshToken)
+	h.authService.Logout(accessToken, refreshToken)
 	clearRefreshCookie(c)
 	c.JSON(http.StatusOK, gin.H{"message": "logged out"})
 }

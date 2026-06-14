@@ -19,6 +19,22 @@ services:
     networks:
       - booktracker_network
 
+  redis:
+    image: redis:7-alpine
+    container_name: booktracker_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - booktracker_network
+
   backend:
     build:
       context: ./backend
@@ -36,8 +52,12 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       JWT_SECRET: ${JWT_SECRET}
       PORT: ${PORT}
+      REDIS_ADDR: ${REDIS_ADDR}
+      GO_ENV: ${GO_ENV}
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     networks:
       - booktracker_network
@@ -60,6 +80,7 @@ services:
 
 volumes:
   postgres_data:
+  redis_data:
 
 networks:
   booktracker_network:

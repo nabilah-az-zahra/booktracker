@@ -4,6 +4,7 @@ import (
 	"booktracker/backend/internal/handlers"
 	"booktracker/backend/internal/middleware"
 	"booktracker/backend/internal/models"
+	redisclient "booktracker/backend/internal/redis"
 	"booktracker/backend/internal/repositories"
 	"booktracker/backend/internal/services"
 	"log"
@@ -23,6 +24,7 @@ func main() {
 
 	db := models.NewDB()
 	defer db.Close()
+	redisclient.Init()
 
 	authRepo := repositories.NewAuthRepository(db)
 	bookRepo := repositories.NewBookRepository(db)

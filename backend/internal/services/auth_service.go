@@ -2,7 +2,9 @@ package services
 
 import (
 	"booktracker/backend/internal/models"
+	redisclient "booktracker/backend/internal/redis"
 	"booktracker/backend/internal/repositories"
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
@@ -111,11 +113,26 @@ func (s *AuthService) RefreshToken(refreshToken string) (*models.AuthResponse, s
 	return &models.AuthResponse{Token: accessToken, User: *user}, newRefreshToken, nil
 }
 
-func (s * AuthService) Logout(refreshToken string) error {
-	if refreshToken == "" {
-		return nil
+func (s * AuthService) Logout(accessToken, refreshToken string) error {
+	if accessToken != "" {
+		remaining := time.Until(time.Now().Add(15 * time.Minute))
+		if remaining > 0 {
+			if err := redisclient.Client.Set(
+				context.Background(),
+				"blacklist:"+accessToken,
+				1,
+				remaining,
+			).Err(); err != nil {
+				log.Printf("warning: failed to blacklist token in Redis: %v", err)
+			}
+		}
 	}
-	return s.authRepo.DeleteRefreshToken(refreshToken)
+
+	if refreshToken == "" {
+		return s.authRepo.DeleteRefreshToken(refreshToken)
+	}
+	
+	return nil
 }
 
 func (s *AuthService) GetProfile(userID string) (*models.User, error) {
