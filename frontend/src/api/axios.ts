@@ -34,16 +34,17 @@ api.interceptors.response.use(
     (response) => response,
     async (error) => {
         const originalRequest = error.config
-        if (error.response?.status !== 401 || originalRequest._retry) {
+        if (
+            error.response?.status !== 401 ||
+            originalRequest._retry ||
+            originalRequest.url?.includes('/auth/login') ||
+            originalRequest.url?.includes('/auth/register') ||
+            originalRequest.url?.includes('/auth/refresh') ||
+            originalRequest.url?.includes('/auth/logout')
+        ) {
             return Promise.reject(error)
         }
-        if (originalRequest.url?.includes('/auth/refresh')) {
-            localStorage.removeItem('token')
-            localStorage.removeItem('user')
-            const currentPath = window.location.pathname
-            window.location.href = `/login?redirect=${encodeURIComponent(currentPath)}`
-            return Promise.reject(error)
-        }
+
         if (isRefreshing) {
             return new Promise((resolve, reject) => {
                 failedQueue.push({ resolve, reject })
@@ -62,10 +63,13 @@ api.interceptors.response.use(
         try {
             const res = await api.post('/api/auth/refresh')
             const newToken = res.data.token
+
             localStorage.setItem('token', newToken)
             localStorage.setItem('user', JSON.stringify(res.data.user))
+
             api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`
             originalRequest.headers.Authorization = `Bearer ${newToken}`
+
             processQueue(null, newToken)
             return api(originalRequest)
         } catch (refreshError) {
