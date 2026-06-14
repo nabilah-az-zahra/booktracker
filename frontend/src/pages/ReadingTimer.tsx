@@ -62,6 +62,16 @@ const ReadingTimer = () => {
     }, [id])
 
     useEffect(() => {
+        const handleUnload = (e: BeforeUnloadEvent) => {
+            if (session && isRunning) {
+                e.preventDefault()
+            }
+        }
+        window.addEventListener('beforeunload', handleUnload)
+        return () => window.removeEventListener('beforeunload', handleUnload)
+    }, [session, isRunning])
+
+    useEffect(() => {
         return () => {
             reset()
         }

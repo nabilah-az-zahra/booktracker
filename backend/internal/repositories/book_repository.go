@@ -114,9 +114,19 @@ func (r *BookRepository) Update(bookID, userID string, req models.UpdateBookRequ
 }
 
 func (r *BookRepository) Delete(bookID, userID string) error {
-	_, err := r.db.Exec(
+	result, err := r.db.Exec(
 		`DELETE FROM books WHERE id = $1 AND user_id = $2`,
 		bookID, userID,
 	)
-	return err
+	if err != nil {
+		return err
+	}
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return apperrors.ErrNotFound
+	}
+	return nil
 }

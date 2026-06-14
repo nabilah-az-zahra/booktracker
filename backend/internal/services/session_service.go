@@ -66,6 +66,10 @@ func (s *SessionService) StopSession(sessionID, userID string, duration, pagesRe
 	if progress != nil {
 		newPage = progress.CurrentPage + pagesRead
 	}
+	book, err := s.bookRepo.GetByID(session.BookID, userID)
+	if err == nil && book != nil && book.TotalPages > 0 && newPage > book.TotalPages {
+		newPage = book.TotalPages
+	}
 
 	if err := s.sessionRepo.UpdateProgress(session.BookID, userID, newPage); err != nil {
 		log.Printf("Warning: failed to update progress for book %s: %v", session.BookID, err)
