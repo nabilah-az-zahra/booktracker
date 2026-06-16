@@ -7,7 +7,6 @@ import (
 	redisclient "booktracker/backend/internal/redis"
 
 	"github.com/gin-gonic/gin"
-	"github.com/redis/go-redis/v9"
 )
 
 func AuthRateLimiter() gin.HandlerFunc {
@@ -23,20 +22,17 @@ func AuthRateLimiter() gin.HandlerFunc {
 		key := "ratelimit:auth:" + ip
 		ctx := c.Request.Context()
 
-		var count int64
-		_, err := redisclient.Client.TxPipelined(ctx, func(pipe redis.Pipeliner) error {
-			incr := pipe.Incr(ctx, key)
-			pipe.Expire(ctx, key, time.Minute)
-			count = incr.Val()
-			return nil
-		})
+		pipe := redisclient.Client.Pipeline()
+		incr := pipe.Incr(ctx, key)
+		pipe.Expire(ctx, key, time.Minute)
+		_, err := pipe.Exec(ctx)
 
 		if err != nil {
 			c.Next()
 			return
 		}
 
-		if count > 5 {
+		if incr.Val() > 5 {
 			c.JSON(http.StatusTooManyRequests, gin.H{"message": "too many requests, please try again later", })
 			c.Abort()
 			return 
