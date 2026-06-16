@@ -85,13 +85,13 @@ func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*m
 		return nil, "", errors.New("invalid or expired refresh token")
 	}
 	if rt == nil {
-		oldToken, err := s.authRepo.GetRefreshTokenIgnoreExpiry(ctx, refreshToken)
+		usedToken, err := s.authRepo.GetUsedToken(ctx, refreshToken)
 		if err != nil {
 			return nil, "", errors.New("invalid or expired refresh token")
 		}
-		if oldToken != nil {
-			log.Printf("refresh token reuse detected for family %s and invalidating entire family", oldToken.FamilyID)
-			s.authRepo.DeleteRefreshTokenFamily(ctx, oldToken.FamilyID)
+		if usedToken != nil {
+			log.Printf("refresh token reuse detected for family %s and invalidating entire family", usedToken.FamilyID)
+			s.authRepo.DeleteRefreshTokenFamily(ctx, usedToken.FamilyID)
 			return nil, "", errors.New("invalid or expired refresh token")
 		}
 		return  nil, "", errors.New("invalid or expired refresh token")
@@ -100,6 +100,10 @@ func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*m
 	user, err := s.authRepo.GetUserByID(ctx, rt.UserID)
 	if err != nil || user == nil {
 		return nil, "", errors.New("invalid or expired refresh token")
+	}
+
+	if err := s.authRepo.MarkTokenAsUsed(ctx, refreshToken, rt.FamilyID, rt.UserID); err != nil {
+		log.Printf("warning: failed to mark token as used: %v", err)
 	}
 
 	if err := s.authRepo.DeleteRefreshToken(ctx, refreshToken); err != nil {

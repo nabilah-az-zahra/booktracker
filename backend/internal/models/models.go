@@ -54,6 +54,13 @@ type RefreshToken struct {
 	CreatedAt 	time.Time 	`json:"created_at"`
 }
 
+type UsedRefreshToken struct {
+    Token    string    `json:"token"`
+    FamilyID string    `json:"family_id"`
+    UserID   string    `json:"user_id"`
+    UsedAt   time.Time `json:"used_at"`
+}
+
 type RegisterRequest struct {
 	Name     string `json:"name" binding:"required"`
 	Email    string `json:"email" binding:"required,email"`

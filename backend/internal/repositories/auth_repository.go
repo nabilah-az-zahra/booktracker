@@ -110,21 +110,32 @@ func (r *AuthRepository) GetRefreshToken(ctx context.Context, token string) (*mo
 	return rt, nil
 }
 
-func (r *AuthRepository) GetRefreshTokenIgnoreExpiry(ctx context.Context, token string) (*models.RefreshToken, error) {
-	rt := &models.RefreshToken{}
-	err := r.db.QueryRowContext(
+func (r *AuthRepository) MarkTokenAsUsed(ctx context.Context, token, familyID, userID string) error {
+    _, err := r.db.ExecContext(
 		ctx,
-		`SELECT id, user_id, token, family_id, parent_token, expires_at, created_at
-		FROM refresh_tokens WHERE token = $1`,
-		token,
-	).Scan(&rt.ID, &rt.UserID, &rt.Token, &rt.FamilyID, &rt.ParentToken, &rt.ExpiresAt, &rt.CreatedAt)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
-		return nil, err
-	}
-	return rt, nil
+        `INSERT INTO used_refresh_tokens (token, family_id, user_id)
+        VALUES ($1, $2, $3)
+        ON CONFLICT (token) DO NOTHING`,
+        token, familyID, userID,
+    )
+    return err
+}
+
+func (r *AuthRepository) GetUsedToken(ctx context.Context, token string) (*models.UsedRefreshToken, error) {
+    ut := &models.UsedRefreshToken{}
+    err := r.db.QueryRowContext(
+		ctx,
+        `SELECT token, family_id, user_id, used_at
+        FROM used_refresh_tokens WHERE token = $1`,
+        token,
+    ).Scan(&ut.Token, &ut.FamilyID, &ut.UserID, &ut.UsedAt)
+    if err != nil {
+        if err == sql.ErrNoRows {
+            return nil, nil
+        }
+        return nil, err
+    }
+    return ut, nil
 }
 
 func (r *AuthRepository) DeleteRefreshToken(ctx context.Context, token string) error {
