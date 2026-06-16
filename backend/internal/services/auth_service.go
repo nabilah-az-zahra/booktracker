@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -69,8 +70,9 @@ func (s *AuthService) Login(ctx context.Context, req models.LoginRequest) (*mode
 		return nil, "", err
 	}
 
+	familyID := uuid.New().String()
 	expiresAt := time.Now().Add(30 * 24 * time.Hour)
-	if err := s.authRepo.CreateRefreshToken(ctx, user.ID, refreshToken, expiresAt); err != nil {
+	if err := s.authRepo.CreateRefreshToken(ctx, user.ID, refreshToken, familyID, expiresAt); err != nil {
 		return nil, "", err
 	}
 
@@ -83,7 +85,16 @@ func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*m
 		return nil, "", errors.New("invalid or expired refresh token")
 	}
 	if rt == nil {
-		return nil, "", errors.New("invalid or expired refresh token")
+		oldToken, err := s.authRepo.GetRefreshTokenIgnoreExpiry(ctx, refreshToken)
+		if err != nil {
+			return nil, "", errors.New("invalid or expired refresh token")
+		}
+		if oldToken != nil {
+			log.Printf("refresh token reuse detected for family %s and invalidating entire family", oldToken.FamilyID)
+			s.authRepo.DeleteRefreshTokenFamily(ctx, oldToken.FamilyID)
+			return nil, "", errors.New("invalid or expired refresh token")
+		}
+		return  nil, "", errors.New("invalid or expired refresh token")
 	}
 
 	user, err := s.authRepo.GetUserByID(ctx, rt.UserID)
@@ -106,7 +117,7 @@ func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*m
 	}
 
 	expiresAt := time.Now().Add(30 * 24 * time.Hour)
-	if err := s.authRepo.CreateRefreshToken(ctx, user.ID, newRefreshToken, expiresAt); err != nil {
+	if err := s.authRepo.CreateRefreshTokenInFamily(ctx, user.ID, newRefreshToken, rt.FamilyID, refreshToken, expiresAt); err != nil {
 		return nil, "", err
 	}
 
@@ -118,7 +129,7 @@ func (s * AuthService) Logout(ctx context.Context, accessToken, refreshToken str
 		remaining := time.Until(time.Now().Add(15 * time.Minute))
 		if remaining > 0 {
 			if err := redisclient.Client.Set(
-				context.Background(),
+				ctx,
 				"blacklist:"+accessToken,
 				1,
 				remaining,

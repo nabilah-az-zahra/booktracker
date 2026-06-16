@@ -73,12 +73,22 @@ func (r *AuthRepository) UpdateYearlyGoal(ctx context.Context, userID string, go
 	return err
 }
 
-func (r *AuthRepository) CreateRefreshToken(ctx context.Context, userID, token string, expiresAt time.Time) error {
+func (r *AuthRepository) CreateRefreshToken(ctx context.Context, userID, token, familyID string, expiresAt time.Time) error {
 	_, err := r.db.ExecContext(
 		ctx,
-		`INSERT INTO refresh_tokens (user_id, token, expires_at) 
-		VALUES ($1, $2, $3)`,
-		userID, token, expiresAt,
+		`INSERT INTO refresh_tokens (user_id, token, family_id, expires_at) 
+		VALUES ($1, $2, $3, $4)`,
+		userID, token, familyID, expiresAt,
+	)
+	return err
+}
+
+func (r *AuthRepository) CreateRefreshTokenInFamily(ctx context.Context, userID, token, familyID, parentToken string, expiresAt time.Time) error {
+	_, err := r.db.ExecContext(
+		ctx,
+		`INSERT INTO refresh_tokens (user_id, token, family_id, parent_token, expires_at)
+		VALUES ($1, $2, $3, $4, $5)`,
+		userID, token, familyID, parentToken, expiresAt,	
 	)
 	return err
 }
@@ -87,10 +97,27 @@ func (r *AuthRepository) GetRefreshToken(ctx context.Context, token string) (*mo
 	rt := &models.RefreshToken{}
 	err := r.db.QueryRowContext(
 		ctx,
-		`SELECT id, user_id, token, expires_at, created_at
+		`SELECT id, user_id, token, family_id, parent_token, expires_at, created_at
 		FROM refresh_tokens WHERE token = $1 AND expires_at > NOW()`,
 		token,
-	).Scan(&rt.ID, &rt.UserID, &rt.Token, &rt.ExpiresAt, &rt.CreatedAt)
+	).Scan(&rt.ID, &rt.UserID, &rt.Token, &rt.FamilyID, &rt.ParentToken, &rt.ExpiresAt, &rt.CreatedAt)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return rt, nil
+}
+
+func (r *AuthRepository) GetRefreshTokenIgnoreExpiry(ctx context.Context, token string) (*models.RefreshToken, error) {
+	rt := &models.RefreshToken{}
+	err := r.db.QueryRowContext(
+		ctx,
+		`SELECT id, user_id, token, family_id, parent_token, expires_at, created_at
+		FROM refresh_tokens WHERE token = $1`,
+		token,
+	).Scan(&rt.ID, &rt.UserID, &rt.Token, &rt.FamilyID, &rt.ParentToken, &rt.ExpiresAt, &rt.CreatedAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -107,7 +134,15 @@ func (r *AuthRepository) DeleteRefreshToken(ctx context.Context, token string) e
 		token,
 	)
 	return err
+}
 
+func (r *AuthRepository) DeleteRefreshTokenFamily(ctx context.Context, familyID string) error {
+	_, err := r.db.ExecContext(
+		ctx,
+		`DELETE FROM refresh_tokens WHERE family_id = $1`,
+		familyID,
+	)
+	return err
 }
 
 func (r *AuthRepository) DeleteAllRefreshToken(ctx context.Context, userID string) error {
