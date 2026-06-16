@@ -1,13 +1,13 @@
 package middleware
 
 import (
-	"context"
 	"net/http"
 	"time"
 
 	redisclient "booktracker/backend/internal/redis"
 
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 )
 
 func AuthRateLimiter() gin.HandlerFunc {
@@ -21,16 +21,19 @@ func AuthRateLimiter() gin.HandlerFunc {
 		}
 
 		key := "ratelimit:auth:" + ip
-		ctx := context.Background()
+		ctx := c.Request.Context()
 
-		count, err := redisclient.Client.Incr(ctx, key).Result()
+		var count int64
+		_, err := redisclient.Client.TxPipelined(ctx, func(pipe redis.Pipeliner) error {
+			incr := pipe.Incr(ctx, key)
+			pipe.Expire(ctx, key, time.Minute)
+			count = incr.Val()
+			return nil
+		})
+
 		if err != nil {
 			c.Next()
 			return
-		}
-
-		if count == 1 {
-			redisclient.Client.Expire(ctx, key, time.Minute)
 		}
 
 		if count > 5 {

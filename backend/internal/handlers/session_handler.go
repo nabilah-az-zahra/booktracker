@@ -24,7 +24,7 @@ func (h *SessionHandler) StartSession(c *gin.Context) {
 		return
 	}
 
-	session, err := h.sessionService.StartSession(req.BookID, userID)
+	session, err := h.sessionService.StartSession(c.Request.Context(), req.BookID, userID)
 	if err != nil {
 		handleServiceError(c, err)
 		return
@@ -50,7 +50,7 @@ func (h *SessionHandler) PauseSession(c *gin.Context) {
 		return
 	}
 
-	session, err := h.sessionService.PauseSession(sessionID, userID, body.Duration)
+	session, err := h.sessionService.PauseSession(c.Request.Context(), sessionID, userID, body.Duration)
 	if err != nil {
 		handleServiceError(c, err)
 		return
@@ -63,7 +63,7 @@ func (h *SessionHandler) ResumeSession(c *gin.Context) {
 	userID := c.GetString("userID")
 	sessionID := c.Param("id")
 
-	session, err := h.sessionService.ResumeSession(sessionID, userID)
+	session, err := h.sessionService.ResumeSession(c.Request.Context(), sessionID, userID)
 	if err != nil {
 		handleServiceError(c, err)
 		return
@@ -85,7 +85,7 @@ func (h *SessionHandler) StopSession(c *gin.Context) {
 		return
 	}
 
-	session, err := h.sessionService.StopSession(sessionID, userID, body.Duration, body.PagesRead)
+	session, err := h.sessionService.StopSession(c.Request.Context(), sessionID, userID, body.Duration, body.PagesRead)
 	if err != nil {
 		handleServiceError(c, err)
 		return
@@ -98,7 +98,7 @@ func (h *SessionHandler) CancelSession(c *gin.Context) {
 	userID := c.GetString("userID")
 	sessionID := c.Param("id")
 
-	if err := h.sessionService.CancelSession(sessionID, userID); err != nil {
+	if err := h.sessionService.CancelSession(c.Request.Context(), sessionID, userID); err != nil {
 		handleServiceError(c, err)
 		return
 	}
@@ -107,7 +107,7 @@ func (h *SessionHandler) CancelSession(c *gin.Context) {
 
 func (h *SessionHandler) GetActiveSession(c *gin.Context) {
 	userID := c.GetString("userID")
-	session, err := h.sessionService.GetActiveSession(userID)
+	session, err := h.sessionService.GetActiveSession(c.Request.Context(), userID)
 	if err != nil {
 		handleServiceError(c, err)
 		return
@@ -120,7 +120,7 @@ func (h *SessionHandler) GetSessionsByBook(c *gin.Context) {
 	userID := c.GetString("userID")
 	bookID := c.Param("bookId")
 
-	sessions, err := h.sessionService.GetSessionsByBook(bookID, userID)
+	sessions, err := h.sessionService.GetSessionsByBook(c.Request.Context(), bookID, userID)
 	if err != nil {
 		handleServiceError(c, err)
 		return
@@ -133,7 +133,7 @@ func (h *SessionHandler) GetProgress(c *gin.Context) {
 	userID := c.GetString("userID")
 	bookID := c.Param("bookId")
 
-	progress, err := h.sessionService.GetProgress(bookID, userID)
+	progress, err := h.sessionService.GetProgress(c.Request.Context(), bookID, userID)
 	if err != nil {
 		handleServiceError(c, err)
 		return

@@ -17,7 +17,7 @@ func NewStatsHandler(statsService *services.StatsService) *StatsHandler {
 
 func (h *StatsHandler) GetStats(c *gin.Context) {
 	userID := c.GetString("userID")
-	stats, err := h.statsService.GetStats(userID)
+	stats, err := h.statsService.GetStats(c.Request.Context(), userID)
 	if err != nil {
 		handleServiceError(c, err)
 		return

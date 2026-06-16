@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -39,7 +38,7 @@ func AuthMiddleware() gin.HandlerFunc {
 		tokenString := parts[1]
 
 		blacklisted, err := redisclient.Client.Exists(
-			context.Background(),
+			c.Request.Context(),
 			"blacklist:"+tokenString,
 		).Result()
 		if err == nil && blacklisted > 0 {

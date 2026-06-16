@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"booktracker/backend/internal/models"
+	"context"
 	"database/sql"
 	"time"
 )
@@ -14,10 +15,11 @@ func NewStatsRepository(db *sql.DB) *StatsRepository {
 	return &StatsRepository{db: db}
 }
 
-func (r *StatsRepository) GetStats(userID string) (*models.StatsResult, error) {
+func (r *StatsRepository) GetStats(ctx context.Context, userID string) (*models.StatsResult, error) {
 	stats := &models.StatsResult{}
 
-	err := r.db.QueryRow(
+	err := r.db.QueryRowContext(
+		ctx,
 		`SELECT
             COUNT(*) as total_books,
             COUNT(CASE WHEN books.status='finished' THEN 1 END) as finished_books,
@@ -53,12 +55,13 @@ func (r *StatsRepository) GetStats(userID string) (*models.StatsResult, error) {
 		return nil, err
 	}
 
-	stats.CurrentStreak = r.calculateStreak(userID)
+	stats.CurrentStreak = r.calculateStreak(ctx, userID)
 	return stats, nil
 }
 
-func (r *StatsRepository) calculateStreak(userID string) int {
-	rows, err := r.db.Query(
+func (r *StatsRepository) calculateStreak(ctx context.Context, userID string) int {
+	rows, err := r.db.QueryContext(
+		ctx,
 		`SELECT DISTINCT DATE(started_at) as reading_date
 		FROM reading_sessions
 		WHERE user_id=$1 AND status='completed'

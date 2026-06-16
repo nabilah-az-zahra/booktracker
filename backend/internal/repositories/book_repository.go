@@ -3,6 +3,7 @@ package repositories
 import (
 	"booktracker/backend/internal/apperrors"
 	"booktracker/backend/internal/models"
+	"context"
 	"database/sql"
 	"errors"
 )
@@ -15,8 +16,9 @@ func NewBookRepository(db *sql.DB) *BookRepository {
 	return &BookRepository{db: db}
 }
 
-func (r *BookRepository) GetAllByUserID(userID string) ([]models.Book, error) {
-	rows, err := r.db.Query(
+func (r *BookRepository) GetAllByUserID(ctx context.Context, userID string) ([]models.Book, error) {
+	rows, err := r.db.QueryContext(
+		ctx,
 		`SELECT id, user_id, title, author, cover_url, total_pages, status, rating, finished_at, created_at
 		FROM books WHERE user_id = $1 ORDER BY created_at DESC`,
 		userID,
@@ -41,9 +43,10 @@ func (r *BookRepository) GetAllByUserID(userID string) ([]models.Book, error) {
 	return books, nil
 }
 
-func (r *BookRepository) GetByID(bookID, userID string) (*models.Book, error) {
+func (r *BookRepository) GetByID(ctx context.Context, bookID, userID string) (*models.Book, error) {
 	b := &models.Book{}
-	err := r.db.QueryRow(
+	err := r.db.QueryRowContext(
+		ctx,
 		`SELECT id, user_id, title, author, cover_url, total_pages, status, rating, finished_at, created_at
 		FROM books WHERE id = $1 AND user_id = $2`,
 		bookID, userID,
@@ -60,13 +63,14 @@ func (r *BookRepository) GetByID(bookID, userID string) (*models.Book, error) {
 	return b, nil
 }
 
-func (r *BookRepository) Create(userID string, req models.CreateBookRequest) (*models.Book, error) {
+func (r *BookRepository) Create(ctx context.Context, userID string, req models.CreateBookRequest) (*models.Book, error) {
 	status := req.Status
 	if status == "" {
 		status = "want_to_read"
 	}
 	b := &models.Book{}
-	err := r.db.QueryRow(
+	err := r.db.QueryRowContext(
+		ctx,
 		`INSERT INTO books (user_id, title, author, cover_url, total_pages, status)
 		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING id, user_id, title, author, cover_url, total_pages, status, rating, finished_at, created_at`,
@@ -81,9 +85,10 @@ func (r *BookRepository) Create(userID string, req models.CreateBookRequest) (*m
 	return b, nil
 }
 
-func (r *BookRepository) Update(bookID, userID string, req models.UpdateBookRequest) (*models.Book, error) {
+func (r *BookRepository) Update(ctx context.Context, bookID, userID string, req models.UpdateBookRequest) (*models.Book, error) {
 	b := &models.Book{}
-	err := r.db.QueryRow(
+	err := r.db.QueryRowContext(
+		ctx,
 		`UPDATE books SET 
 			title = COALESCE($1, title), 
 			author = COALESCE($2, author), 
@@ -113,8 +118,9 @@ func (r *BookRepository) Update(bookID, userID string, req models.UpdateBookRequ
 	return b, nil
 }
 
-func (r *BookRepository) Delete(bookID, userID string) error {
-	result, err := r.db.Exec(
+func (r *BookRepository) Delete(ctx context.Context, bookID, userID string) error {
+	result, err := r.db.ExecContext(
+		ctx,
 		`DELETE FROM books WHERE id = $1 AND user_id = $2`,
 		bookID, userID,
 	)

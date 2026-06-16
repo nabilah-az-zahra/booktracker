@@ -25,7 +25,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	response, err := h.authService.Register(req)
+	response, err := h.authService.Register(c.Request.Context(), req)
 	if err != nil {
 		c.JSON(http.StatusConflict, gin.H{"message": err.Error()})
 		return
@@ -41,7 +41,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	response, refreshToken, err := h.authService.Login(req)
+	response, refreshToken, err := h.authService.Login(c.Request.Context(), req)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"message": err.Error()})
 		return
@@ -58,7 +58,7 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 		return
 	}
 
-	response, newRefreshToken, err := h.authService.RefreshToken(refreshToken)
+	response, newRefreshToken, err := h.authService.RefreshToken(c.Request.Context(), refreshToken)
 	if err != nil {
 		clearRefreshCookie(c)
 		c.JSON(http.StatusUnauthorized, gin.H{"message": err.Error()})
@@ -77,14 +77,14 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 	}
 
 	refreshToken, _ := c.Cookie("refresh_token")
-	h.authService.Logout(accessToken, refreshToken)
+	h.authService.Logout(c.Request.Context(), accessToken, refreshToken)
 	clearRefreshCookie(c)
 	c.JSON(http.StatusOK, gin.H{"message": "logged out"})
 }
 
 func (h *AuthHandler) GetProfile(c *gin.Context) {
 	userID := c.GetString("userID")
-	user, err := h.authService.GetProfile(userID)
+	user, err := h.authService.GetProfile(c.Request.Context(), userID)
 	if err != nil {
 		handleServiceError(c, err)
 		return
@@ -100,7 +100,7 @@ func (h *AuthHandler) UpdateGoal(c *gin.Context) {
 		return
 	}
 
-	if err := h.authService.UpdateGoal(userID, req.YearlyGoal); err != nil {
+	if err := h.authService.UpdateGoal(c.Request.Context(), userID, req.YearlyGoal); err != nil {
 		handleServiceError(c, err)
 		return
 	}

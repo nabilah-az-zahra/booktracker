@@ -18,7 +18,7 @@ func NewBookHandler(bookService *services.BookService) *BookHandler {
 
 func (h *BookHandler) GetAllBooks(c *gin.Context) {
 	userID := c.GetString("userID")
-	books, err := h.bookService.GetAllBooks(userID)
+	books, err := h.bookService.GetAllBooks(c.Request.Context(), userID)
 	if err != nil {
 		handleServiceError(c, err)
 		return
@@ -31,7 +31,7 @@ func (h *BookHandler) GetBook(c *gin.Context) {
 	userID := c.GetString("userID")
 	bookID := c.Param("id")
 
-	book, err := h.bookService.GetBook(bookID, userID)
+	book, err := h.bookService.GetBook(c.Request.Context(), bookID, userID)
 	if err != nil {
 		handleServiceError(c, err)
 		return
@@ -48,7 +48,7 @@ func (h *BookHandler) CreateBook(c *gin.Context) {
 		return
 	}
 
-	book, err := h.bookService.CreateBook(userID, req)
+	book, err := h.bookService.CreateBook(c.Request.Context(), userID, req)
 	if err != nil {
 		handleServiceError(c, err)
 		return
@@ -66,7 +66,7 @@ func (h *BookHandler) UpdateBook(c *gin.Context) {
 		return
 	}
 
-	book, err := h.bookService.UpdateBook(bookID, userID, req)
+	book, err := h.bookService.UpdateBook(c.Request.Context(), bookID, userID, req)
 	if err != nil {
 		handleServiceError(c, err)
 		return
@@ -79,7 +79,7 @@ func (h *BookHandler) DeleteBook(c *gin.Context) {
 	userID := c.GetString("userID")
 	bookID := c.Param("id")
 
-	if err := h.bookService.DeleteBook(bookID, userID); err != nil {
+	if err := h.bookService.DeleteBook(c.Request.Context(), bookID, userID); err != nil {
 		handleServiceError(c, err)
 		return
 	}

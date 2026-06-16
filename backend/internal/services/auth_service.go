@@ -25,7 +25,7 @@ func NewAuthService(authRepo *repositories.AuthRepository) *AuthService {
 	return &AuthService{authRepo: authRepo}
 }
 
-func (s *AuthService) Register(req models.RegisterRequest) (*models.AuthResponse, error) {
+func (s *AuthService) Register(ctx context.Context, req models.RegisterRequest) (*models.AuthResponse, error) {
 	req.Email = strings.ToLower(strings.TrimSpace(req.Email))
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
@@ -33,7 +33,7 @@ func (s *AuthService) Register(req models.RegisterRequest) (*models.AuthResponse
 		return nil, err
 	}
 
-	user, err := s.authRepo.CreateUser(req.Name, req.Email, string(hashedPassword))
+	user, err := s.authRepo.CreateUser(ctx, req.Name, req.Email, string(hashedPassword))
 	if err != nil {
 		log.Printf("registration error: %v", err)
 		return nil, errors.New("registration failed, try again.")
@@ -47,10 +47,10 @@ func (s *AuthService) Register(req models.RegisterRequest) (*models.AuthResponse
 	return &models.AuthResponse{Token: token, User: *user}, nil
 }
 
-func (s *AuthService) Login(req models.LoginRequest) (*models.AuthResponse, string, error) {
+func (s *AuthService) Login(ctx context.Context, req models.LoginRequest) (*models.AuthResponse, string, error) {
 	req.Email = strings.ToLower(strings.TrimSpace(req.Email))
 
-	user, err := s.authRepo.GetUserByEmail(req.Email)
+	user, err := s.authRepo.GetUserByEmail(ctx, req.Email)
 	if err != nil || user == nil {
 		return nil, "", errors.New("invalid email or password")
 	}
@@ -70,15 +70,15 @@ func (s *AuthService) Login(req models.LoginRequest) (*models.AuthResponse, stri
 	}
 
 	expiresAt := time.Now().Add(30 * 24 * time.Hour)
-	if err := s.authRepo.CreateRefreshToken(user.ID, refreshToken, expiresAt); err != nil {
+	if err := s.authRepo.CreateRefreshToken(ctx, user.ID, refreshToken, expiresAt); err != nil {
 		return nil, "", err
 	}
 
 	return &models.AuthResponse{Token: accessToken, User: *user}, refreshToken, nil
 }
 
-func (s *AuthService) RefreshToken(refreshToken string) (*models.AuthResponse, string, error) {
-	rt, err := s.authRepo.GetRefreshToken(refreshToken)
+func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*models.AuthResponse, string, error) {
+	rt, err := s.authRepo.GetRefreshToken(ctx, refreshToken)
 	if err != nil {
 		return nil, "", errors.New("invalid or expired refresh token")
 	}
@@ -86,12 +86,12 @@ func (s *AuthService) RefreshToken(refreshToken string) (*models.AuthResponse, s
 		return nil, "", errors.New("invalid or expired refresh token")
 	}
 
-	user, err := s.authRepo.GetUserByID(rt.UserID)
+	user, err := s.authRepo.GetUserByID(ctx, rt.UserID)
 	if err != nil || user == nil {
 		return nil, "", errors.New("invalid or expired refresh token")
 	}
 
-	if err := s.authRepo.DeleteRefreshToken(refreshToken); err != nil {
+	if err := s.authRepo.DeleteRefreshToken(ctx, refreshToken); err != nil {
 		return nil, "", err
 	}
 
@@ -106,14 +106,14 @@ func (s *AuthService) RefreshToken(refreshToken string) (*models.AuthResponse, s
 	}
 
 	expiresAt := time.Now().Add(30 * 24 * time.Hour)
-	if err := s.authRepo.CreateRefreshToken(user.ID, newRefreshToken, expiresAt); err != nil {
+	if err := s.authRepo.CreateRefreshToken(ctx, user.ID, newRefreshToken, expiresAt); err != nil {
 		return nil, "", err
 	}
 
 	return &models.AuthResponse{Token: accessToken, User: *user}, newRefreshToken, nil
 }
 
-func (s * AuthService) Logout(accessToken, refreshToken string) error {
+func (s * AuthService) Logout(ctx context.Context, accessToken, refreshToken string) error {
 	if accessToken != "" {
 		remaining := time.Until(time.Now().Add(15 * time.Minute))
 		if remaining > 0 {
@@ -128,19 +128,19 @@ func (s * AuthService) Logout(accessToken, refreshToken string) error {
 		}
 	}
 
-	if refreshToken == "" {
-		return s.authRepo.DeleteRefreshToken(refreshToken)
+	if refreshToken != "" {
+		return s.authRepo.DeleteRefreshToken(ctx, refreshToken)
 	}
 	
 	return nil
 }
 
-func (s *AuthService) GetProfile(userID string) (*models.User, error) {
-	return s.authRepo.GetUserByID(userID)
+func (s *AuthService) GetProfile(ctx context.Context, userID string) (*models.User, error) {
+	return s.authRepo.GetUserByID(ctx, userID)
 }
 
-func (s *AuthService) UpdateGoal(userID string, goal int) error {
-	return s.authRepo.UpdateYearlyGoal(userID, goal)
+func (s *AuthService) UpdateGoal(ctx context.Context, userID string, goal int) error {
+	return s.authRepo.UpdateYearlyGoal(ctx, userID, goal)
 }
 
 func generateAccessToken(userID string) (string, error) {
