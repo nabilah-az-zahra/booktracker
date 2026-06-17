@@ -1,0 +1,49 @@
+name: CI/CD
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  ci:
+    name: Build & Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+      - name: Verify dependencies
+        working-directory: backend
+        run: go mod verify
+      - name: Run go vet
+        working-directory: backend
+        run: go vet ./...
+      - name: Build backend
+        working-directory: backend
+        run: go build -o /dev/null ./cmd/main.go
+  cd:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+    needs: ci
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Deploy to EC2
+        uses: appleyboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY }}
+          port: ${{ secrets.EC2_PORT }}
+          script: |
+            cd booktracker
+            git pull origin main
+            docker compose down
+            docker builder prune -f
+            docker compose up --build backend redis -d
+            echo "Deployment complete"
