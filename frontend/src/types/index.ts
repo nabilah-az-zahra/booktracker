@@ -49,6 +49,12 @@ export interface StatsData {
     yearly_finished: number
 }
 
+export interface DailyReading {
+    date: string
+    pages: number
+    seconds: number
+}
+
 export interface AuthResponse {
     token: string
     user: User

@@ -91,6 +91,7 @@ func main() {
 			protected.GET("/progress/:bookId", sessionHandler.GetProgress)
 
 			protected.GET("/stats", statsHandler.GetStats)
+			protected.GET("/stats/history", statsHandler.GetReadingHistory)
 		}
 	}
 

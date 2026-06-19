@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import Layout from '../components/Layout'
 import PageState from '../components/PageState'
 import api from '../api/axios'
-import type { StatsData } from '../types'
+import type { DailyReading, StatsData } from '../types'
 import {
     BookOpen,
     Clock,
@@ -13,11 +13,20 @@ import {
     Award,
     BookMarked,
     ArrowRight,
+    BarChart2,
 } from 'lucide-react'
 import { formatTime } from '../utils/formatUtils'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
+
+type HistoryWindow = 7 | 30 | 90
+type HistoryMetric = 'pages' | 'minutes'
 
 const Stats = () => {
     const [stats, setStats] = useState<StatsData | null>(null)
+    const [history, setHistory] = useState<DailyReading[]>([])
+    const [historyWindow, setHistoryWindow] = useState<HistoryWindow>(30)
+    const [historyMetric, setHistoryMetric] = useState<HistoryMetric>('pages')
+    const [historyLoading, setHistoryLoading] = useState(false)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(false)
 
@@ -34,10 +43,31 @@ const Stats = () => {
         }
     }
 
+    const fetchHistory = async (days: HistoryWindow) => {
+        setHistoryLoading(true)
+        try {
+            const res = await api.get(`/api/stats/history?days=${days}`)
+            setHistory(res.data.data || [])
+        } catch (err) {
+            console.error(err)
+        } finally {
+            setHistoryLoading(false)
+        }
+    }
+
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         fetchStats()
     }, [])
+
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        fetchHistory(historyWindow)
+    }, [historyWindow])
+
+    const handleWindowChange = (days: HistoryWindow) => {
+        setHistoryWindow(days)
+    }
 
     const yearlyProgress = stats?.yearly_goal
         ? Math.min(Math.round((stats.yearly_finished / stats.yearly_goal) * 100), 100)
@@ -69,6 +99,38 @@ const Stats = () => {
         stats.total_books > 0
             ? Math.round(((stats.total_books - stats.finished_books) / stats.total_books) * 100)
             : 0
+
+    const chartData = history.map((d) => ({
+        date: d.date.slice(5),
+        value: historyMetric === 'pages' ? d.pages : Math.round(d.seconds / 60),
+        fullDate: d.date,
+    }))
+
+    const hasAnyData = history.some((d) => d.pages > 0 || d.seconds > 0)
+    const CustomTooltip = ({
+        active,
+        payload,
+        label,
+    }: {
+        active?: boolean
+        payload?: Array<{ value: number }>
+        label?: string
+    }) => {
+        if (active && payload && payload.length) {
+            return (
+                <div className="bg-bt-surface border-bt-border rounded-lg border px-3 py-2 shadow-sm">
+                    <p className="text-bt-muted mb-1 text-xs">{label}</p>
+                    <p className="text-bt-dark text-sm font-semibold">
+                        {payload[0].value}{' '}
+                        <span className="text-bt-muted font-normal">
+                            {historyMetric === 'pages' ? 'pages' : 'min'}
+                        </span>
+                    </p>
+                </div>
+            )
+        }
+        return null
+    }
 
     return (
         <Layout>
@@ -249,6 +311,113 @@ const Stats = () => {
                                 </div>
                             </div>
                         </div>
+                    </div>
+
+                    <div className="border-bt-border bg-bt-surface rounded-xl border p-6">
+                        <div className="mb-5 flex items-start justify-between">
+                            <div className="flex items-center gap-3">
+                                <BarChart2 size={18} strokeWidth={1.5} className="text-bt-gold" />
+                                <p className="text-bt-dark font-serif text-base font-semibold">
+                                    Reading History
+                                </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="bg-bt-accent-bg flex gap-1 rounded-lg p-1">
+                                    <button
+                                        onClick={() => setHistoryMetric('pages')}
+                                        className={`cursor-pointer rounded-md px-2.5 py-1 text-xs font-medium transition-colors duration-200 ${
+                                            historyMetric === 'pages'
+                                                ? 'bg-bt-surface text-bt-dark shadow-sm'
+                                                : 'text-bt-muted'
+                                        }`}
+                                    >
+                                        Pages
+                                    </button>
+                                    <button
+                                        onClick={() => setHistoryMetric('minutes')}
+                                        className={`cursor-pointer rounded-md px-2.5 py-1 text-xs font-medium transition-colors duration-200 ${
+                                            historyMetric === 'minutes'
+                                                ? 'bg-bt-surface text-bt-dark shadow-sm'
+                                                : 'text-bt-muted'
+                                        }`}
+                                    >
+                                        Minutes
+                                    </button>
+                                </div>
+                                <div className="bg-bt-accent-bg flex gap-1 rounded-lg p-1">
+                                    {([7, 30, 90] as HistoryWindow[]).map((d) => (
+                                        <button
+                                            key={d}
+                                            onClick={() => handleWindowChange(d)}
+                                            className={`cursor-pointer rounded-md px-2.5 py-1 text-xs font-medium transition-colors duration-200 ${
+                                                historyWindow === d
+                                                    ? 'bg-bt-surface text-bt-dark shadow-sm'
+                                                    : 'text-bt-muted'
+                                            }`}
+                                        >
+                                            {d}d
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        {historyLoading ? (
+                            <div className="flex h-48 items-center justify-center">
+                                <p className="text-bt-muted-light text-sm">Loading...</p>
+                            </div>
+                        ) : !hasAnyData ? (
+                            <div className="flex h-48 flex-col items-center justify-center">
+                                <BarChart2
+                                    size={24}
+                                    strokeWidth={1.5}
+                                    className="text-bt-placeholder mb-3"
+                                />
+                                <p className="text-bt-muted text-sm">
+                                    No reading sessions in the last {historyWindow} days
+                                </p>
+                            </div>
+                        ) : (
+                            <ResponsiveContainer width="100%" height={200}>
+                                <BarChart
+                                    data={chartData}
+                                    margin={{ top: 4, right: 4, left: -24, bottom: 0 }}
+                                >
+                                    <CartesianGrid
+                                        strokeDasharray="3 3"
+                                        stroke="var(--color-bt-border)"
+                                        vertical={false}
+                                    />
+                                    <XAxis
+                                        dataKey="date"
+                                        tick={{ fontSize: 10, fill: 'var(--color-bt-muted)' }}
+                                        tickLine={false}
+                                        axisLine={false}
+                                        interval={
+                                            historyWindow === 7 ? 0 : historyWindow === 30 ? 6 : 14
+                                        }
+                                    />
+                                    <YAxis
+                                        tick={{ fontSize: 10, fill: 'var(--color-bt-muted)' }}
+                                        tickLine={false}
+                                        axisLine={false}
+                                    />
+                                    <Tooltip
+                                        // eslint-disable-next-line react-hooks/static-components
+                                        content={<CustomTooltip />}
+                                        cursor={{ fill: 'var(--color-bt-order)', opacity: 0.5 }}
+                                    />
+                                    <Bar
+                                        dataKey="value"
+                                        fill="var(--color-bt-gold)"
+                                        radius={[3, 3, 0, 0]}
+                                        maxBarSize={
+                                            historyWindow === 7 ? 40 : historyWindow === 30 ? 16 : 8
+                                        }
+                                    />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        )}
                     </div>
 
                     {stats.total_reading_time_seconds > 0 && stats.total_pages_read > 0 && (

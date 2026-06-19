@@ -61,6 +61,12 @@ type UsedRefreshToken struct {
     UsedAt   time.Time `json:"used_at"`
 }
 
+type DailyReading struct {
+	Date 	string `json:"date"`
+	Pages 	string `json:"pages"`
+	Seconds string `json:"seconds"`
+}
+
 type RegisterRequest struct {
 	Name     string `json:"name" binding:"required"`
 	Email    string `json:"email" binding:"required,email"`

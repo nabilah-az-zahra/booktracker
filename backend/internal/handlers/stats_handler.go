@@ -3,6 +3,7 @@ package handlers
 import (
 	"booktracker/backend/internal/services"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -23,4 +24,20 @@ func (h *StatsHandler) GetStats(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"data": stats})
+}
+
+func (h *StatsHandler) GetReadingHistory(c *gin.Context) {
+	userID := c.GetString("userID")
+	daysStr := c.DefaultQuery("days", "30")
+	days, err := strconv.Atoi(daysStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid days parameter"})
+		return
+	}
+	history, err := h.statsService.GetReadingHistory(c.Request.Context(), userID, days)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"data": history})
 }
