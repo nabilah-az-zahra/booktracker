@@ -58,11 +58,23 @@ const Register = () => {
 
     return (
         <div className="bg-bt-cream flex min-h-screen flex-col items-center justify-center px-6 py-16">
-            <Link to="/welcome" className="mb-10 flex items-center gap-2.5">
-                <div className="bg-bt-gold flex h-9 w-9 items-center justify-center rounded-lg">
-                    <BookOpen size={17} className="text-white" strokeWidth={1.5} />
+            <Link to="/welcome" className="group mb-10 flex items-center gap-3">
+                <div className="border-bt-placeholder group-hover:border-bt-gold relative flex h-10 w-10 items-center justify-center rounded-xl border-2 border-dashed bg-transparent transition-all duration-300 group-hover:rotate-12">
+                    <div className="relative">
+                        <BookOpen
+                            size={18}
+                            className="text-bt-dark transition-colors duration-300"
+                            strokeWidth={1.5}
+                        />
+                        <span className="bg-bt-dark group-hover:bg-bt-gold absolute bottom-1 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full transition-colors duration-300" />
+                    </div>
                 </div>
-                <span className="text-bt-dark font-serif text-xl font-semibold">BookTracker</span>
+                <span className="text-bt-dark font-serif text-xl font-normal tracking-wide">
+                    <strong className="font-bold">Book</strong>
+                    <span className="text-bt-warm group-hover:text-bt-gold ml-0.5 font-sans text-lg font-semibold tracking-wider uppercase transition-colors duration-300">
+                        Tracker
+                    </span>
+                </span>
             </Link>
 
             <div className="bg-bt-surface border-bt-border w-full max-w-sm rounded-2xl border px-8 py-10">

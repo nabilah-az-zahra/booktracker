@@ -14,6 +14,7 @@ import {
     BookMarked,
     ArrowRight,
     BarChart2,
+    Search,
 } from 'lucide-react'
 import { formatTime } from '../utils/formatUtils'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
@@ -156,7 +157,12 @@ const Stats = () => {
                         to="/books/search"
                         className="text-bt-gold hover:text-bt-muted-dark text-sm font-medium transition-colors"
                     >
-                        Find your first book →
+                        Find your first book
+                        <Search
+                            size={13}
+                            strokeWidth={2}
+                            className="ml-1 inline-block align-text-bottom"
+                        />
                     </Link>
                 </div>
             ) : (
@@ -511,7 +517,8 @@ const GoalSetter = ({ onSaved }: { onSaved: (goal: number) => void }) => {
                 }}
                 className="text-bt-gold hover:text-bt-muted-dark shrink-0 cursor-pointer text-xs font-medium transition-colors"
             >
-                Set goal →
+                Set goal
+                <Target size={13} strokeWidth={2} className="mb-0.5 ml-1 inline-block" />
             </button>
         )
 

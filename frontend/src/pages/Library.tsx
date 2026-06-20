@@ -139,7 +139,12 @@ const Library = () => {
                         to="/books/search"
                         className="text-bt-gold hover:text-bt-muted-dark text-xs font-medium transition-colors"
                     >
-                        Search and add books →
+                        Search and add books
+                        <Search
+                            size={13}
+                            strokeWidth={2}
+                            className="ml-1 inline-block align-text-bottom"
+                        />
                     </Link>
                 </div>
             ) : (

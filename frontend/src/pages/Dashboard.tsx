@@ -5,8 +5,18 @@ import PageState from '../components/PageState'
 import { useAuth } from '../context/useAuth'
 import api from '../api/axios'
 import type { Book, StatsData, ReadingSession } from '../types'
-import { BookOpen, Clock, Target, Flame, ArrowRight, Plus, Timer, BookMarked } from 'lucide-react'
-import { statusLabel, statusClassName } from '../utils/bookUtils'
+import {
+    BookOpen,
+    Clock,
+    Target,
+    Flame,
+    ArrowRight,
+    Plus,
+    Timer,
+    BookMarked,
+    Search,
+} from 'lucide-react'
+import { statusBorderClassName, statusLabel, statusTextClassName } from '../utils/bookUtils'
 import { formatTime } from '../utils/formatUtils'
 
 const Dashboard = () => {
@@ -179,7 +189,12 @@ const Dashboard = () => {
                                 to="/books/search"
                                 className="text-bt-gold hover:text-bt-muted-dark text-xs font-medium transition-colors"
                             >
-                                Find something to read →
+                                Find something to read{' '}
+                                <Search
+                                    size={13}
+                                    strokeWidth={2}
+                                    className="ml-1 inline-block align-text-bottom"
+                                />
                             </Link>
                         </div>
                     ) : (
@@ -235,49 +250,56 @@ const Dashboard = () => {
                         Recently Added
                     </h2>
                     {books.length === 0 ? (
-                        <div className="border-bt-dashed bg-bt-surface rounded-xl border border-dashed py-12 text-center">
-                            <p className="text-bt-muted text-sm">Your library is empty</p>
+                        <div className="border-bt-dashed bg-bt-surface flex flex-col items-center justify-center rounded-xl border-2 border-dashed px-4 py-14 text-center">
+                            <div className="bg-bt-accent-bg mb-3 flex h-10 w-10 items-center justify-center rounded-full">
+                                <BookOpen size={16} className="text-bt-gold" strokeWidth={1.5} />
+                            </div>
+                            <p className="text-bt-dark font-serif text-sm font-medium tracking-tight">
+                                Your library is silent
+                            </p>
+                            <p className="text-bt-muted mt-0.5 text-xs">
+                                Books you actively track will appear right here.
+                            </p>
                         </div>
                     ) : (
-                        <div className="border-bt-border bg-bt-surface overflow-hidden rounded-xl border">
+                        <div className="border-bt-border bg-bt-surface overflow-hidden rounded-xl border shadow-xs">
                             {books.slice(0, 5).map((book) => (
                                 <Link
                                     key={book.id}
                                     to={`/books/${book.id}`}
-                                    className="group hover:bg-bt-hover-row border-bt-track flex items-center gap-4 border-b px-5 py-3.5 transition-colors duration-150 last:border-b-0"
+                                    className={`group border-bt-border bg-bt-surface flex items-center gap-4 border-b border-l-2 px-5 py-4 transition-all duration-200 last:border-b-0 ${statusBorderClassName(book.status)}`}
                                 >
                                     {book.cover_url ? (
                                         <img
                                             src={book.cover_url}
                                             alt={book.title}
-                                            className="h-9 w-7 shrink-0 rounded-sm object-cover"
+                                            className="border-bt-border/50 h-11 w-8 shrink-0 rounded-sm border object-cover shadow-xs transition-transform duration-200 group-hover:scale-102"
                                         />
                                     ) : (
-                                        <div className="bg-bt-accent-bg flex h-9 w-7 shrink-0 items-center justify-center rounded-sm">
+                                        <div className="bg-bt-accent-bg border-bt-dashed flex h-11 w-8 shrink-0 items-center justify-center rounded-sm border">
                                             <BookOpen
-                                                size={11}
-                                                className="text-bt-gold"
+                                                size={12}
+                                                className="text-bt-placeholder group-hover:text-bt-gold transition-colors duration-200"
                                                 strokeWidth={1.5}
                                             />
                                         </div>
                                     )}
                                     <div className="min-w-0 flex-1">
-                                        <p className="text-bt-dark truncate text-sm font-medium">
+                                        <p className="text-bt-dark group-hover:text-bt-gold truncate font-serif text-sm font-medium tracking-tight transition-colors duration-200">
                                             {book.title}
                                         </p>
-                                        <p className="text-bt-muted truncate text-xs">
-                                            {book.author}
+                                        <p className="text-bt-muted mt-0.5 truncate text-xs">
+                                            by {book.author} ·{' '}
+                                            <span className={statusTextClassName(book.status)}>
+                                                {statusLabel(book.status)}
+                                            </span>
                                         </p>
                                     </div>
-                                    <span
-                                        className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] ${statusClassName(book.status)}`}
-                                    >
-                                        {statusLabel(book.status)}
-                                    </span>
+
                                     <ArrowRight
-                                        size={13}
-                                        strokeWidth={1.5}
-                                        className="text-bt-placeholder shrink-0"
+                                        size={14}
+                                        strokeWidth={2}
+                                        className="text-bt-placeholder group-hover:text-bt-dark shrink-0 transform transition-all duration-200 group-hover:translate-x-0.5"
                                     />
                                 </Link>
                             ))}

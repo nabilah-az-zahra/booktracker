@@ -26,15 +26,22 @@ const Landing = () => {
             >
                 <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6 md:px-8">
                     <Link to="/" className="group flex items-center gap-3">
-                        <div className="bg-bt-dark group-hover:bg-bt-gold flex h-8 w-8 items-center justify-center rounded-sm transition-colors duration-200">
-                            <BookOpen
-                                size={15}
-                                className="text-bt-gold group-hover:text-bt-dark transition-colors duration-200"
-                                strokeWidth={1.5}
-                            />
+                        <div className="border-bt-placeholder group-hover:border-bt-gold relative flex h-9 w-9 items-center justify-center rounded-xl border-2 border-dashed bg-transparent transition-all duration-300 group-hover:rotate-12">
+                            <div className="relative">
+                                <BookOpen
+                                    size={16}
+                                    className="text-bt-dark transition-colors duration-300"
+                                    strokeWidth={1.5}
+                                />
+                                <span className="bg-bt-dark group-hover:bg-bt-gold absolute bottom-1 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full transition-colors duration-300" />
+                            </div>
                         </div>
-                        <span className="text-base font-semibold tracking-tight">
-                            Book<span className="text-bt-gold">Tracker</span>
+
+                        <span className="text-bt-dark font-serif text-lg font-normal tracking-wide">
+                            <strong className="font-bold">Book</strong>
+                            <span className="text-bt-warm group-hover:text-bt-gold ml-0.5 font-sans text-base font-semibold tracking-wider uppercase transition-colors duration-300">
+                                Tracker
+                            </span>
                         </span>
                     </Link>
                     <div className="flex items-center gap-6">
@@ -212,41 +219,26 @@ const Landing = () => {
                 </div>
             </RevealSection>
 
-            <RevealSection className="bg-bt-dark text-bt-cream">
-                <div className="mx-auto max-w-6xl px-6 py-20 md:px-8">
-                    <div className="reveal-child max-w-sm">
-                        <p className="mb-3 text-2xl leading-snug font-semibold">
-                            Free to use.
-                            <br />
-                            No nonsense.
-                        </p>
-                        <p className="text-bt-warm mb-8 text-sm">
-                            Make an account. Add a book. Start a session.
-                        </p>
-                        <Link
-                            to="/register"
-                            className="bg-bt-gold text-bt-dark hover:bg-bt-cream inline-flex items-center gap-2 rounded-lg px-6 py-3 text-sm font-medium transition-colors duration-200"
-                        >
-                            Get started <MoveRight size={14} strokeWidth={1.5} />
-                        </Link>
-                    </div>
-                </div>
-            </RevealSection>
-
             <footer className="bg-bt-dark text-bt-warm border-bt-warm/10 border-t">
                 <div className="mx-auto max-w-6xl px-6 py-16 md:px-8">
                     <div className="border-bt-warm/10 flex flex-col items-start justify-between gap-10 border-b pb-12 md:flex-row">
                         <div className="max-w-xs">
                             <Link to="/" className="group mb-4 flex items-center gap-3">
-                                <div className="border-bt-gold group-hover:bg-bt-gold flex h-8 w-8 items-center justify-center rounded-sm border transition-colors duration-200">
-                                    <BookOpen
-                                        size={14}
-                                        className="text-bt-gold group-hover:text-bt-dark transition-colors duration-200"
-                                        strokeWidth={1.5}
-                                    />
+                                <div className="border-bt-muted-light/30 group-hover:border-bt-gold relative flex h-9 w-9 items-center justify-center rounded-xl border-2 border-dashed bg-transparent transition-all duration-300 group-hover:rotate-12">
+                                    <div className="relative">
+                                        <BookOpen
+                                            size={16}
+                                            className="text-bt-cream transition-colors duration-300"
+                                            strokeWidth={1.5}
+                                        />
+                                        <span className="bg-bt-cream group-hover:bg-bt-gold absolute bottom-1 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full transition-colors duration-300" />
+                                    </div>
                                 </div>
-                                <span className="text-bt-cream text-sm font-semibold">
-                                    Book<span className="text-bt-gold">Tracker</span>
+                                <span className="text-bt-cream font-serif text-lg font-normal tracking-wide">
+                                    <strong className="font-bold">Book</strong>
+                                    <span className="text-bt-muted-light group-hover:text-bt-gold ml-0.5 font-sans text-base font-semibold tracking-wider uppercase transition-colors duration-300">
+                                        Tracker
+                                    </span>
                                 </span>
                             </Link>
                             <p className="text-bt-warm/70 text-xs leading-relaxed">

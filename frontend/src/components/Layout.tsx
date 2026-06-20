@@ -27,12 +27,22 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
             <header className="bg-bt-surface border-bt-border sticky top-0 z-40 border-b">
                 <div className="mx-auto max-w-5xl px-6">
                     <div className="flex h-14 items-center justify-between">
-                        <Link to="/" className="flex shrink-0 items-center gap-2">
-                            <div className="bg-bt-gold flex h-7 w-7 items-center justify-center rounded-md">
-                                <BookOpen size={14} className="text-white" strokeWidth={1.5} />
+                        <Link to="/" className="group flex shrink-0 items-center gap-2.5">
+                            <div className="border-bt-placeholder group-hover:border-bt-gold relative flex h-8 w-8 items-center justify-center rounded-lg border-2 border-dashed bg-transparent transition-all duration-300 group-hover:rotate-12">
+                                <div className="relative">
+                                    <BookOpen
+                                        size={14}
+                                        className="text-bt-dark transition-colors duration-300"
+                                        strokeWidth={1.5}
+                                    />
+                                    <span className="bg-bt-dark group-hover:bg-bt-gold absolute bottom-0.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full transition-colors duration-300" />
+                                </div>
                             </div>
-                            <span className="text-bt-dark font-serif text-base font-semibold">
-                                BookTracker
+                            <span className="text-bt-dark font-serif text-base font-normal tracking-wide">
+                                <strong className="font-bold">Book</strong>
+                                <span className="text-bt-warm group-hover:text-bt-gold ml-0.5 font-sans text-sm font-semibold tracking-wider uppercase transition-colors duration-300">
+                                    Tracker
+                                </span>
                             </span>
                         </Link>
                         <nav className="hidden items-center gap-1 md:flex">

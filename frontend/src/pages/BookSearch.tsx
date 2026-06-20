@@ -3,7 +3,16 @@ import { useNavigate } from 'react-router-dom'
 import Layout from '../components/Layout'
 import api from '../api/axios'
 import type { GoogleBook, Book } from '../types'
-import { Search, BookOpen, Plus, Check, Loader2, ChevronLeft, ChevronRight } from 'lucide-react'
+import {
+    Search,
+    BookOpen,
+    Plus,
+    Check,
+    Loader2,
+    ChevronLeft,
+    ChevronRight,
+    Library,
+} from 'lucide-react'
 
 const RESULTS_PER_PAGE = 9
 
@@ -331,10 +340,23 @@ const BookSearch = () => {
                 <div className="mt-6 text-center">
                     <button
                         onClick={() => navigate('/library')}
-                        className="text-bt-gold hover:text-bt-muted-dark cursor-pointer text-sm font-medium transition-colors"
+                        className="group bg-bt-surface border-bt-border hover:border-bt-gold flex cursor-pointer items-center gap-4 rounded-xl border py-2 pr-4 pl-3.5 shadow-xs transition-all duration-300"
                     >
-                        {addedIds.size} book{addedIds.size > 1 ? 's' : ''} added — View your library
-                        →
+                        <div className="border-bt-border flex items-center gap-2 border-r pr-3">
+                            <Library size={16} className="text-bt-warm" strokeWidth={1.5} />
+                            <span className="text-bt-dark font-serif text-sm tracking-tight">
+                                <strong className="text-bt-gold font-sans font-bold">
+                                    {addedIds.size}
+                                </strong>{' '}
+                                book{addedIds.size > 1 ? 's' : ''} added
+                            </span>
+                        </div>
+                        <span className="text-bt-warm group-hover:text-bt-dark flex items-center gap-1 font-sans text-xs font-bold tracking-wider uppercase transition-colors duration-200">
+                            <span>View Library</span>
+                            <span className="text-bt-gold transition-transform duration-200 group-hover:translate-x-0.5">
+                                <ChevronRight size={14} />
+                            </span>
+                        </span>
                     </button>
                 </div>
             )}

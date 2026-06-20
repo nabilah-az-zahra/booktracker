@@ -15,6 +15,7 @@ import {
     Check,
     ChevronDown,
     StickyNote,
+    ChevronRight,
 } from 'lucide-react'
 import { statusClassName } from '../utils/bookUtils'
 import { formatTime } from '../utils/formatUtils'
@@ -360,9 +361,13 @@ const BookDetail = () => {
                                 {book.status === 'reading' && (
                                     <Link
                                         to={`/reading/${book.id}`}
-                                        className="text-bt-gold hover:text-bt-muted-dark mt-2 inline-block text-xs font-medium transition-colors"
+                                        className="group text-bt-gold hover:text-bt-muted-dark mt-2 inline-flex items-center gap-1 text-xs font-medium transition-colors"
                                     >
-                                        Start your first session →
+                                        <span>Start your first session</span>
+                                        <ChevronRight
+                                            size={14}
+                                            className="transform transition-transform duration-200 group-hover:translate-x-0.5"
+                                        />
                                     </Link>
                                 )}
                             </div>

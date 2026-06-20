@@ -16,6 +16,7 @@ import {
     StickyNote,
     Trash2,
     Plus,
+    ChevronRight,
 } from 'lucide-react'
 import { getApiError } from '../utils/errors'
 import { formatTime } from '../utils/formatUtils'
@@ -493,7 +494,8 @@ const ReadingTimer = () => {
                         to={`/reading/${activeBookId}`}
                         className="text-bt-gold hover:text-bt-muted-dark text-xs font-medium transition-colors"
                     >
-                        Go there →
+                        Go there
+                        <ChevronRight size={14} />
                     </Link>
                 </div>
             )}
@@ -632,17 +634,17 @@ const ReadingTimer = () => {
                         </div>
                         <div className="flex gap-3 px-6 pb-6">
                             <button
+                                onClick={() => setShowCancelModal(false)}
+                                className="bg-bt-cream text-bt-warm border-bt-input-border hover:border-bt-gold flex-1 cursor-pointer rounded-md border py-2.5 text-sm font-medium transition-all duration-200"
+                            >
+                                Keep reading
+                            </button>
+                            <button
                                 onClick={handleCancel}
                                 disabled={cancelling}
                                 className="bg-bt-danger hover:bg-bt-danger-dark flex-1 cursor-pointer rounded-md py-2.5 text-sm font-medium text-white transition-all duration-200 disabled:opacity-50"
                             >
                                 {cancelling ? 'Cancelling...' : 'Yes, cancel'}
-                            </button>
-                            <button
-                                onClick={() => setShowCancelModal(false)}
-                                className="bg-bt-cream text-bt-warm border-bt-input-border hover:border-bt-gold flex-1 cursor-pointer rounded-md border py-2.5 text-sm font-medium transition-all duration-200"
-                            >
-                                Keep reading
                             </button>
                         </div>
                     </div>
