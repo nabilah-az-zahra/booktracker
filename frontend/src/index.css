@@ -20,6 +20,21 @@
     --color-bt-danger: #e07070;
     --color-bt-danger-bg: #fdf2f2;
 
+    --color-bt-accent-bg: #f5f0ea;
+    --color-bt-muted-light: #b8a898;
+    --color-bt-muted-dark: #7a6a5a;
+    --color-bt-placeholder: #c8b8a8;
+    --color-bt-dashed: #d8cfc8;
+    --color-bt-input-border: #e0d8d0;
+    --color-bt-error: #c0392b;
+    --color-bt-error-bg: #fdf2f2;
+    --color-bt-error-border: #e07070;
+    --color-bt-banner-bg: #fdf8f3;
+    --color-bt-banner-border: #ede8e3;
+    --color-bt-danger-dark: #c85a5a;
+    --color-bt-status-finished-bg: #f0f9f0;
+    --color-bt-status-finished-text: #4a7c59;
+
     --font-serif: 'Mozilla', 'Georgia', serif;
 }
 
