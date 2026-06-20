@@ -62,11 +62,26 @@ type UsedRefreshToken struct {
 }
 
 type DailyReading struct {
-	Date 	string `json:"date"`
-	Pages 	string `json:"pages"`
-	Seconds string `json:"seconds"`
+	Date 	string 	`json:"date"`
+	Pages 	int 	`json:"pages"`
+	Seconds int 	`json:"seconds"`
 }
 
+type SessionNote struct {
+	ID 			string 		`json:"id"`
+	SessionID 	string 		`json:"session_id"`
+	UserID 		string 		`json:"user_id"`
+	Chapter 	string 		`json:"chapter"`
+	Pages 		string 		`json:"pages"`
+	Note 		string 		`json:"note"`
+	CreatedAt 	time.Time	`json:"created_at"`
+}
+
+type CreateNoteRequest struct {
+	Chapter string `json:"chapter"`
+	Pages 	string `json:"pages"`
+	Note 	string `json:"note" binding:"required"`
+}
 type RegisterRequest struct {
 	Name     string `json:"name" binding:"required"`
 	Email    string `json:"email" binding:"required,email"`

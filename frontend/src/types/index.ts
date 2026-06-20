@@ -39,6 +39,16 @@ export interface ReadingProgress {
     updated_at: string
 }
 
+export interface SessionNote {
+    id: string
+    session_id: string
+    user_id: string
+    chapter: string
+    pages: string
+    note: string
+    created_at: string
+}
+
 export interface StatsData {
     total_books: number
     finished_books: number

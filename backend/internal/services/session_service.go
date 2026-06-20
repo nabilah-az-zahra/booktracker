@@ -94,3 +94,18 @@ func (s *SessionService) GetSessionsByBook(ctx context.Context, bookID, userID s
 func (s *SessionService) GetProgress(ctx context.Context, bookID, userID string) (*models.ReadingProgress, error) {
 	return s.sessionRepo.GetProgress(ctx, bookID, userID)
 }
+
+func (s *SessionService) AddNote(ctx context.Context, sessionID, userID string, req models.CreateNoteRequest) (*models.SessionNote, error) {
+	if len(req.Note) > 2000 {
+		return nil, fmt.Errorf("%w: note cannot exceed 2000 characters", apperrors.ErrValidation)
+	}
+	return s.sessionRepo.CreateNote(ctx, sessionID, userID, req)
+}
+
+func (s *SessionService) GetNotes(ctx context.Context, sessionID, userID string) ([]models.SessionNote, error) {
+	return s.sessionRepo.GetNotesBySessionID(ctx, sessionID, userID)
+}
+
+func (s *SessionService) DeleteNote(ctx context.Context, noteID, userID string) error {
+	return s.sessionRepo.DeleteNote(ctx, noteID, userID)
+}

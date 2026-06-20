@@ -90,6 +90,10 @@ func main() {
 			protected.GET("/sessions/book/:bookId", sessionHandler.GetSessionsByBook)
 			protected.GET("/progress/:bookId", sessionHandler.GetProgress)
 
+			protected.POST("/sessions/:id/notes", sessionHandler.AddNote)
+			protected.GET("/sessions/:id/notes", sessionHandler.GetNotes)
+			protected.DELETE("/notes/:noteId", sessionHandler.DeleteNote)
+
 			protected.GET("/stats", statsHandler.GetStats)
 			protected.GET("/stats/history", statsHandler.GetReadingHistory)
 		}

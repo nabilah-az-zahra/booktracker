@@ -96,6 +96,15 @@ func (r *SessionRepository) StopSession(ctx context.Context, sessionID, userID s
 func (r *SessionRepository) CancelSession(ctx context.Context, sessionID, userID string) error {
 	_, err := r.db.ExecContext(
 		ctx,
+		`DELETE FROM session_notes WHERE session_id=$1 AND user_id=$2`,
+		sessionID, userID,
+	)
+	if err != nil {
+		return err
+	}
+
+	_, err = r.db.ExecContext(
+		ctx,
 		`DELETE FROM reading_sessions 
         WHERE id=$1 AND user_id=$2 AND status IN ('active', 'paused')`,
 		sessionID, userID,
@@ -199,4 +208,60 @@ func (r *SessionRepository) HasActiveSession(ctx context.Context, bookID, userID
 		return false, err
 	}
 	return count > 0, nil
+}
+
+func (r *SessionRepository) CreateNote(ctx context.Context, sessionID, userID string, req models.CreateNoteRequest) (*models.SessionNote, error) {
+	note := &models.SessionNote{}
+	err := r.db.QueryRowContext(
+		ctx,
+		`INSERT INTO session_notes (session_id, user_id, chapter, pages, note)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING id, session_id, user_id, chapter, pages, note, created_at`,
+		sessionID, userID, req.Chapter, req.Pages, req.Note,
+	).Scan(
+		&note.ID, &note.SessionID, &note.UserID,
+		&note.Chapter, &note.Pages, &note.Note, &note.CreatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return note, nil
+}
+
+func (r *SessionRepository) GetNotesBySessionID(ctx context.Context, sessionID, userID string) ([]models.SessionNote, error) {
+	notes := make([]models.SessionNote, 0)
+	rows, err := r.db.QueryContext(
+		ctx,
+		`SELECT id, session_id, user_id, chapter, pages, note, created_at
+		FROM session_notes
+		WHERE session_id = $1 AND user_id = $2
+		ORDER BY created_at ASC`,
+		sessionID, userID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var n models.SessionNote
+		err := rows.Scan(
+			&n.ID, &n.SessionID, &n.UserID,
+			&n.Chapter, &n.Pages, &n.Note, &n.CreatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		notes = append(notes, n)
+	}
+	return notes, nil
+}
+
+func (r *SessionRepository) DeleteNote(ctx context.Context, noteID, userID string) error {
+	_, err := r.db.ExecContext(
+		ctx,
+		`DELETE FROM session_notes WHERE id = $1 AND user_id = $2`,
+		noteID, userID,
+	)
+	return err
 }

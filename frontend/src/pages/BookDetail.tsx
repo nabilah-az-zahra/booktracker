@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import Layout from '../components/Layout'
 import PageState from '../components/PageState'
 import api from '../api/axios'
-import type { Book, ReadingSession, ReadingProgress } from '../types'
+import type { Book, ReadingSession, ReadingProgress, SessionNote } from '../types'
 import {
     BookOpen,
     Timer,
@@ -14,6 +14,7 @@ import {
     Star,
     Check,
     ChevronDown,
+    StickyNote,
 } from 'lucide-react'
 import { statusClassName } from '../utils/bookUtils'
 import { formatTime } from '../utils/formatUtils'
@@ -37,6 +38,9 @@ const BookDetail = () => {
     const [deleteError, setDeleteError] = useState('')
     const [isDeleting, setIsDeleting] = useState(false)
     const [updateError, setUpdateError] = useState('')
+    const [sessionNotes, setSessionNotes] = useState<Record<string, SessionNote[]>>({})
+    const [loadingNotes, setLoadingNotes] = useState<Record<string, boolean>>({})
+    const [expandedSessions, setExpandedSessions] = useState<Set<string>>(new Set())
 
     useEffect(() => {
         const fetchData = async () => {
@@ -49,12 +53,10 @@ const BookDetail = () => {
                 if (bookRes?.data?.data) {
                     setBook(bookRes.data.data)
                 }
-
                 const sessionsRes = await api
                     .get(`/api/sessions/book/${id}`)
                     .catch(() => ({ data: { data: [] } }))
                 setSessions(sessionsRes.data.data || [])
-
                 const progressRes = await api
                     .get(`/api/progress/${id}`)
                     .catch(() => ({ data: { data: null } }))
@@ -67,6 +69,33 @@ const BookDetail = () => {
         }
         if (id) fetchData()
     }, [id])
+
+    const toggleSessionNotes = async (sessionId: string) => {
+        const isExpanded = expandedSessions.has(sessionId)
+
+        if (isExpanded) {
+            setExpandedSessions((prev) => {
+                const next = new Set(prev)
+                next.delete(sessionId)
+                return next
+            })
+            return
+        }
+
+        setExpandedSessions((prev) => new Set(prev).add(sessionId))
+
+        if (!sessionNotes[sessionId]) {
+            setLoadingNotes((prev) => ({ ...prev, [sessionId]: true }))
+            try {
+                const res = await api.get(`/api/sessions/${sessionId}/notes`)
+                setSessionNotes((prev) => ({ ...prev, [sessionId]: res.data.data || [] }))
+            } catch {
+                setSessionNotes((prev) => ({ ...prev, [sessionId]: [] }))
+            } finally {
+                setLoadingNotes((prev) => ({ ...prev, [sessionId]: false }))
+            }
+        }
+    }
 
     const handleBookUpdate = async (patch: Partial<Pick<Book, 'status' | 'rating'>>) => {
         if (!book) return
@@ -339,41 +368,104 @@ const BookDetail = () => {
                             </div>
                         ) : (
                             <div className="divide-bt-border divide-y">
-                                {sessions.map((session, index) => (
-                                    <div
-                                        key={session.id}
-                                        className="flex items-center justify-between px-6 py-4"
-                                    >
-                                        <div className="flex items-center gap-4">
-                                            <div className="bg-bt-accent-bg text-bt-gold flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold">
-                                                {sessions.length - index}
+                                {sessions.map((session, index) => {
+                                    const isExpanded = expandedSessions.has(session.id)
+                                    const notes = sessionNotes[session.id] || []
+                                    const isLoadingNotes = loadingNotes[session.id]
+
+                                    return (
+                                        <div key={session.id}>
+                                            <div className="flex items-center justify-between px-6 py-4">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="bg-bt-accent-bg text-bt-gold flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold">
+                                                        {sessions.length - index}
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-bt-dark text-sm font-medium">
+                                                            {formatTime(
+                                                                session.duration_seconds ?? 0,
+                                                            )}
+                                                        </p>
+                                                        <p className="text-bt-muted mt-0.5 text-xs">
+                                                            {formatDate(session.started_at)}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-4">
+                                                    <div className="text-right">
+                                                        <p className="text-bt-dark text-sm font-medium">
+                                                            {session.pages_read} pages
+                                                        </p>
+                                                        <p className="text-bt-muted-light mt-0.5 text-xs">
+                                                            {session.started_at
+                                                                ? new Date(
+                                                                      session.started_at,
+                                                                  ).toLocaleTimeString('en-US', {
+                                                                      hour: '2-digit',
+                                                                      minute: '2-digit',
+                                                                  })
+                                                                : '—'}
+                                                        </p>
+                                                    </div>
+                                                    <button
+                                                        onClick={() =>
+                                                            toggleSessionNotes(session.id)
+                                                        }
+                                                        className={`text-bt-muted hover:text-bt-gold flex cursor-pointer items-center gap-1 text-xs transition-colors ${isExpanded ? 'text-bt-gold' : ''}`}
+                                                    >
+                                                        <StickyNote size={13} strokeWidth={1.5} />
+                                                        <ChevronDown
+                                                            size={12}
+                                                            className={`transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+                                                        />
+                                                    </button>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <p className="text-bt-dark text-sm font-medium">
-                                                    {formatTime(session.duration_seconds ?? 0)}
-                                                </p>
-                                                <p className="text-bt-muted mt-0.5 text-xs">
-                                                    {formatDate(session.started_at)}
-                                                </p>
-                                            </div>
+
+                                            {isExpanded && (
+                                                <div className="bg-bt-accent-bg/40 border-bt-border border-t px-6 py-4">
+                                                    {isLoadingNotes ? (
+                                                        <p className="text-bt-muted-light text-xs">
+                                                            Loading notes...
+                                                        </p>
+                                                    ) : notes.length === 0 ? (
+                                                        <p className="text-bt-muted-light text-xs">
+                                                            No notes for this session
+                                                        </p>
+                                                    ) : (
+                                                        <div className="space-y-3">
+                                                            {notes.map((note) => (
+                                                                <div
+                                                                    key={note.id}
+                                                                    className="bg-bt-surface border-bt-border rounded-lg border p-3"
+                                                                >
+                                                                    {(note.chapter ||
+                                                                        note.pages) && (
+                                                                        <div className="mb-1.5 flex items-center gap-2">
+                                                                            {note.chapter && (
+                                                                                <span className="bg-bt-accent-bg text-bt-gold rounded px-1.5 py-0.5 text-[10px] font-medium">
+                                                                                    {note.chapter}
+                                                                                </span>
+                                                                            )}
+                                                                            {note.pages && (
+                                                                                <span className="text-bt-muted-light text-[10px]">
+                                                                                    p. {note.pages}
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                    )}
+                                                                    <p className="text-bt-dark text-xs leading-relaxed">
+                                                                        {note.note}
+                                                                    </p>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
-                                        <div className="text-right">
-                                            <p className="text-bt-dark text-sm font-medium">
-                                                {session.pages_read} pages
-                                            </p>
-                                            <p className="text-bt-muted-light mt-0.5 text-xs">
-                                                {session.started_at
-                                                    ? new Date(
-                                                          session.started_at,
-                                                      ).toLocaleTimeString('en-US', {
-                                                          hour: '2-digit',
-                                                          minute: '2-digit',
-                                                      })
-                                                    : '—'}
-                                            </p>
-                                        </div>
-                                    </div>
-                                ))}
+                                    )
+                                })}
                             </div>
                         )}
                     </div>

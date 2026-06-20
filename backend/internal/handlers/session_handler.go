@@ -141,3 +141,47 @@ func (h *SessionHandler) GetProgress(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"data": progress})
 }
+
+func (h *SessionHandler) AddNote(c *gin.Context) {
+	userID := c.GetString("userID")
+	sessionID := c.Param("id")
+
+	var req models.CreateNoteRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	note, err := h.sessionService.AddNote(c.Request.Context(), sessionID, userID, req)
+	if err != nil {
+		handleServiceError(c, err)
+		return 
+	}
+	
+	c.JSON(http.StatusCreated, gin.H{"data": note})
+}
+
+func (h *SessionHandler) GetNotes(c *gin.Context) {
+	userID := c.GetString("userID")
+	sessionID := c.Param("id")
+
+	notes, err := h.sessionService.GetNotes(c.Request.Context(), sessionID, userID)
+	if err != nil {
+		handleServiceError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": notes})
+}
+
+func (h *SessionHandler) DeleteNote(c *gin.Context) {
+	userID := c.GetString("userID")
+	noteID := c.Param("noteId")
+
+	if err := h.sessionService.DeleteNote(c.Request.Context(), noteID, userID); err != nil {
+		handleServiceError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "note deleted"})
+}
