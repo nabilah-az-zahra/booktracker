@@ -17,7 +17,7 @@ func Init() {
 	}
 	Client = redis.NewClient(&redis.Options{
 		Addr: addr,
-		Password: "",
+		Password: os.Getenv("REDIS_PASSWORD"),
 		DB: 0,
 	})
 	if err := Client.Ping(context.Background()).Err(); err != nil {

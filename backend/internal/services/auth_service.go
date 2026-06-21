@@ -30,13 +30,16 @@ func NewAuthService(authRepo *repositories.AuthRepository) *AuthService {
 func (s *AuthService) Register(ctx context.Context, req models.RegisterRequest) (*models.AuthResponse, error) {
 	req.Email = strings.ToLower(strings.TrimSpace(req.Email))
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), 12)
 	if err != nil {
 		return nil, err
 	}
 
 	user, err := s.authRepo.CreateUser(ctx, req.Name, req.Email, string(hashedPassword), req.Timezone)
 	if err != nil {
+		if strings.Contains(err.Error(), "unique") || strings.Contains(err.Error(), "duplicate") {
+			return nil, apperrors.ErrEmailTaken
+		}
 		log.Printf("registration error: %v", err)
 		return nil, errors.New("registration failed, try again.")
 	}
@@ -145,8 +148,11 @@ func (s * AuthService) Logout(ctx context.Context, accessToken, refreshToken str
 	}
 
 	if refreshToken != "" {
-		return s.authRepo.DeleteRefreshToken(ctx, refreshToken)
-	}
+        if err := s.authRepo.DeleteRefreshToken(ctx, refreshToken); err != nil {
+            log.Printf("warning: failed to delete refresh token on logout: %v", err)
+            return err
+        }
+    }
 	
 	return nil
 }

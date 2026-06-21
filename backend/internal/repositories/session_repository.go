@@ -96,15 +96,6 @@ func (r *SessionRepository) StopSession(ctx context.Context, sessionID, userID s
 func (r *SessionRepository) CancelSession(ctx context.Context, sessionID, userID string) error {
 	_, err := r.db.ExecContext(
 		ctx,
-		`DELETE FROM session_notes WHERE session_id=$1 AND user_id=$2`,
-		sessionID, userID,
-	)
-	if err != nil {
-		return err
-	}
-
-	_, err = r.db.ExecContext(
-		ctx,
 		`DELETE FROM reading_sessions 
         WHERE id=$1 AND user_id=$2 AND status IN ('active', 'paused')`,
 		sessionID, userID,

@@ -7,4 +7,5 @@ var (
 	ErrNotFound			= errors.New("not found")
 	ErrConflict			= errors.New("conflict")
 	ErrInvalidTimezone	= errors.New("invalid timezone")
+	ErrEmailTaken 		= errors.New("email already taken")
 )

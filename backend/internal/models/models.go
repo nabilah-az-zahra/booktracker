@@ -84,7 +84,7 @@ type CreateNoteRequest struct {
 	Note 	string `json:"note" binding:"required"`
 }
 type RegisterRequest struct {
-	Name     string `json:"name" binding:"required"`
+	Name     string `json:"name" binding:"required,max=72"`
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required,min=8,max=72"`
 	Timezone string `json:"timezone"`
@@ -126,7 +126,7 @@ type StartSessionRequest struct {
 }
 
 type UpdateGoalRequest struct {
-	YearlyGoal int `json:"yearly_goal" binding:"required"`
+	YearlyGoal int `json:"yearly_goal" binding:"required,min=1,max=1000"`
 }
 
 type StatsResult struct {

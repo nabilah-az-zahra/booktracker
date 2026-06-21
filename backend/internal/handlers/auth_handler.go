@@ -1,8 +1,11 @@
 package handlers
 
 import (
+	"booktracker/backend/internal/apperrors"
 	"booktracker/backend/internal/models"
 	"booktracker/backend/internal/services"
+	"errors"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -27,7 +30,11 @@ func (h *AuthHandler) Register(c *gin.Context) {
 
 	response, err := h.authService.Register(c.Request.Context(), req)
 	if err != nil {
-		c.JSON(http.StatusConflict, gin.H{"message": err.Error()})
+		if errors.Is(err, apperrors.ErrEmailTaken) {
+			c.JSON(http.StatusConflict, gin.H{"message": "email already in use"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
 
@@ -77,7 +84,9 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 	}
 
 	refreshToken, _ := c.Cookie("refresh_token")
-	h.authService.Logout(c.Request.Context(), accessToken, refreshToken)
+	if err := h.authService.Logout(c.Request.Context(), accessToken, refreshToken); err != nil {
+        log.Printf("logout error: %v", err)
+    }
 	clearRefreshCookie(c)
 	c.JSON(http.StatusOK, gin.H{"message": "logged out"})
 }

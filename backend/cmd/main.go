@@ -8,6 +8,7 @@ import (
 	"booktracker/backend/internal/repositories"
 	"booktracker/backend/internal/services"
 	"log"
+	"net/http"
 	"os"
 
 	"github.com/gin-contrib/cors"
@@ -45,6 +46,10 @@ func main() {
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
 	r.SetTrustedProxies(nil)
+	r.Use(func(c *gin.Context) {
+		c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 1<<20)
+		c.Next()
+	})
 
 	allowedOrigin := os.Getenv("ALLOWED_ORIGIN")
 	if allowedOrigin == "" {
@@ -71,6 +76,7 @@ func main() {
 
 		protected := api.Group("/")
 		protected.Use(middleware.AuthMiddleware())
+		protected.Use(middleware.GeneralRateLimiter())
 		{
 			protected.GET("/profile", authHandler.GetProfile)
 			protected.PATCH("/profile/goal", authHandler.UpdateGoal)
