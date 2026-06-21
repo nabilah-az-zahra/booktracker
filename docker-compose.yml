@@ -72,6 +72,7 @@ services:
     ports:
       - "3000:5173"
     environment:
+      VITE_API_URL: ${VITE_API_URL}
       VITE_GOOGLE_BOOKS_API_KEY: ${VITE_GOOGLE_BOOKS_API_KEY}
     depends_on:
       - backend
