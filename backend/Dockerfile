@@ -13,6 +13,8 @@ FROM alpine:latest
 
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
+RUN apk add --no-cache tzdata
+
 WORKDIR /app
 
 COPY --from=builder /app/main .

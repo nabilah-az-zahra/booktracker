@@ -108,6 +108,20 @@ func (h *AuthHandler) UpdateGoal(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "goal updated successfully"})
 }
 
+func (h *AuthHandler) UpdateTimezone(ctx *gin.Context) {
+    userID := ctx.GetString("userID")
+    var req models.UpdateTimezoneRequest
+    if err := ctx.ShouldBindJSON(&req); err != nil {
+        ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+    if err := h.authService.UpdateTimezone(ctx, userID, req.Timezone); err != nil {
+        ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid timezone"})
+        return
+    }
+    ctx.JSON(http.StatusOK, gin.H{"message": "timezone updated"})
+}
+
 func setRefreshCookie(c *gin.Context, token string) {
 	secure := os.Getenv("GO_ENV") == "production"
 	c.SetCookie(

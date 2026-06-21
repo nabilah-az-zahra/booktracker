@@ -1,6 +1,7 @@
 package services
 
 import (
+	"booktracker/backend/internal/apperrors"
 	"booktracker/backend/internal/models"
 	redisclient "booktracker/backend/internal/redis"
 	"booktracker/backend/internal/repositories"
@@ -34,7 +35,7 @@ func (s *AuthService) Register(ctx context.Context, req models.RegisterRequest) 
 		return nil, err
 	}
 
-	user, err := s.authRepo.CreateUser(ctx, req.Name, req.Email, string(hashedPassword))
+	user, err := s.authRepo.CreateUser(ctx, req.Name, req.Email, string(hashedPassword), req.Timezone)
 	if err != nil {
 		log.Printf("registration error: %v", err)
 		return nil, errors.New("registration failed, try again.")
@@ -156,6 +157,13 @@ func (s *AuthService) GetProfile(ctx context.Context, userID string) (*models.Us
 
 func (s *AuthService) UpdateGoal(ctx context.Context, userID string, goal int) error {
 	return s.authRepo.UpdateYearlyGoal(ctx, userID, goal)
+}
+
+func (s *AuthService) UpdateTimezone(ctx context.Context, userID, timezone string) error {
+    if _, err := time.LoadLocation(timezone); err != nil {
+        return apperrors.ErrInvalidTimezone 
+    }
+    return s.authRepo.UpdateTimezone(ctx, userID, timezone)
 }
 
 func generateAccessToken(userID string) (string, error) {

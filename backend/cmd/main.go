@@ -74,6 +74,7 @@ func main() {
 		{
 			protected.GET("/profile", authHandler.GetProfile)
 			protected.PATCH("/profile/goal", authHandler.UpdateGoal)
+			protected.PATCH("/profile/timezone", authHandler.UpdateTimezone)
 
 			protected.GET("/books", bookHandler.GetAllBooks)
 			protected.GET("/books/:id", bookHandler.GetBook)

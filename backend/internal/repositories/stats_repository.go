@@ -17,30 +17,34 @@ func NewStatsRepository(db *sql.DB) *StatsRepository {
 
 func (r *StatsRepository) GetStats(ctx context.Context, userID string) (*models.StatsResult, error) {
 	stats := &models.StatsResult{}
+	var timezone string
 
 	err := r.db.QueryRowContext(
-		ctx,
+    	ctx,
 		`SELECT
-            COUNT(*) as total_books,
-            COUNT(CASE WHEN books.status='finished' THEN 1 END) as finished_books,
-            users.yearly_goal,
-            COUNT(CASE WHEN books.status='finished'
-                AND EXTRACT(YEAR FROM books.finished_at) = EXTRACT(YEAR FROM NOW())
-                THEN 1 END) as yearly_finished,
-			COALESCE((
-				SELECT SUM(duration_seconds)
-				FROM reading_sessions
-				WHERE user_id = users.id AND status = 'completed'
-			), 0) as total_reading_time,
-			COALESCE((
-				SELECT SUM (pages_read)
-				FROM reading_sessions
-				WHERE user_id = users.id AND status = 'completed'
-			), 0) as total_pages_read
-        FROM users
-        LEFT JOIN books ON books.user_id = users.id
-        WHERE users.id = $1
-        GROUP BY users.id, users.yearly_goal`,
+			COUNT(books.id) AS total_books,
+			COUNT(books.id) FILTER (WHERE books.status = 'finished') AS finished_books,
+			users.yearly_goal,
+			COUNT(books.id) FILTER (
+				WHERE books.status = 'finished'
+				AND EXTRACT(YEAR FROM books.finished_at AT TIME ZONE COALESCE(users.timezone, 'UTC')) = 
+					EXTRACT(YEAR FROM NOW() AT TIME ZONE COALESCE(users.timezone, 'UTC'))
+			) AS yearly_finished,
+			COALESCE(rs.total_time, 0) AS total_reading_time,
+			COALESCE(rs.total_pages, 0) AS total_pages_read,
+			COALESCE(users.timezone, 'UTC') AS timezone
+		FROM users
+		LEFT JOIN books ON books.user_id = users.id
+		LEFT JOIN (
+			SELECT user_id,
+				SUM(duration_seconds) AS total_time,
+				SUM(pages_read) AS total_pages
+			FROM reading_sessions
+			WHERE user_id = $1 AND status = 'completed'
+			GROUP BY user_id
+		) rs ON rs.user_id = users.id
+		WHERE users.id = $1
+		GROUP BY users.id, users.yearly_goal, rs.total_time, rs.total_pages, users.timezone`,
 		userID,
 	).Scan(
 		&stats.TotalBooks,
@@ -49,14 +53,20 @@ func (r *StatsRepository) GetStats(ctx context.Context, userID string) (*models.
 		&stats.YearlyFinished,
 		&stats.TotalReadingTime,
 		&stats.TotalPagesRead,
+		&timezone,
 	)
 
 	if err != nil && err != sql.ErrNoRows {
-		return nil, err
-	}
+        return nil, err
+    }
 
-	stats.CurrentStreak = r.calculateStreak(ctx, userID)
-	return stats, nil
+    streak, err := r.CalculateStreak(ctx, userID, timezone)
+    if err != nil {
+        return nil, err
+    }
+
+    stats.CurrentStreak = streak
+    return stats, nil
 }
 
 func (r *StatsRepository) GetReadingHistory(ctx context.Context, userID string, days int) ([]models.DailyReading, error) {
@@ -107,49 +117,59 @@ func (r *StatsRepository) GetReadingHistory(ctx context.Context, userID string, 
 	return history, nil
 }
 
-func (r *StatsRepository) calculateStreak(ctx context.Context, userID string) int {
-	rows, err := r.db.QueryContext(
-		ctx,
-		`SELECT DISTINCT DATE(started_at) as reading_date
-		FROM reading_sessions
-		WHERE user_id=$1 AND status='completed'
-		ORDER BY reading_date DESC`,
-		userID,
-	)
-	if err != nil {
-		return 0
-	}
-	defer rows.Close()
+func (r *StatsRepository) CalculateStreak(ctx context.Context, userID string, userTimeZone string) (int, error) {
+    loc, err := time.LoadLocation(userTimeZone)
+    if err != nil {
+        loc = time.UTC
+    }
 
-	var dates []time.Time
-	for rows.Next() {
-		var rd time.Time
-		if err := rows.Scan(&rd); err == nil {
-			dates = append(dates, rd.Truncate(24*time.Hour))
-		}
-	}
+    rows, err := r.db.QueryContext(
+        ctx,
+        `SELECT DISTINCT DATE(started_at AT TIME ZONE $2) as reading_date
+        FROM reading_sessions
+        WHERE user_id=$1 AND status='completed'
+        ORDER BY reading_date DESC`,
+        userID,
+        userTimeZone,
+    )
+    if err != nil {
+        return 0, err
+    }
+    defer rows.Close()
 
-	if len(dates) == 0 {
-		return 0
-	}
+    var dates []time.Time
+    for rows.Next() {
+        var rd time.Time
+        if err := rows.Scan(&rd); err != nil {
+            return 0, err
+        }
+        normalizedDate := time.Date(rd.Year(), rd.Month(), rd.Day(), 0, 0, 0, 0, loc)
+        dates = append(dates, normalizedDate)
+    }
 
-	today := time.Now().UTC().Truncate(24 * time.Hour)
+    if len(dates) == 0 {
+        return 0, nil
+    }
+
+    now := time.Now().In(loc)
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, loc)
 	yesterday := today.AddDate(0, 0, -1)
 
-	if !dates[0].Equal(today) && !dates[0].Equal(yesterday) {
-		return 0
-	}
+    if !dates[0].Equal(today) && !dates[0].Equal(yesterday) {
+        return 0, nil
+    }
 
-	streak := 0
-	expected := dates[0]
+    streak := 0
+    expected := dates[0]
 
-	for _, readingDate := range dates {
-		if readingDate.Equal(expected) {
-			streak++
-			expected = readingDate.AddDate(0, 0, -1)
-		} else {
-			break
-		}
-	}
-	return streak
+    for _, readingDate := range dates {
+        if readingDate.Equal(expected) {
+            streak++
+            expected = readingDate.AddDate(0, 0, -1) 
+        } else {
+            break 
+        }
+    }
+
+    return streak, nil
 }

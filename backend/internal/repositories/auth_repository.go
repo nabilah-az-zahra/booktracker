@@ -15,15 +15,18 @@ func NewAuthRepository(db *sql.DB) *AuthRepository {
 	return &AuthRepository{db: db}
 }
 
-func (r *AuthRepository) CreateUser(ctx context.Context, name, email, passwordHash string) (*models.User, error) {
+func (r *AuthRepository) CreateUser(ctx context.Context, name, email, passwordHash, timezone string) (*models.User, error) {
+	if timezone == "" {
+        timezone = "UTC"
+    }
 	user := &models.User{}
 	err := r.db.QueryRowContext(
 		ctx,
-		`INSERT INTO users (name, email, password_hash)
-		VALUES ($1, $2, $3)
-		RETURNING id, name, email, yearly_goal, created_at`,
-		name, email, passwordHash,
-	).Scan(&user.ID, &user.Name, &user.Email, &user.YearlyGoal, &user.CreatedAt)
+		`INSERT INTO users (name, email, password_hash, timezone)
+		VALUES ($1, $2, $3, $4)
+		RETURNING id, name, email, yearly_goal, timezone, created_at`,
+		name, email, passwordHash, timezone,
+	).Scan(&user.ID, &user.Name, &user.Email, &user.YearlyGoal, &user.Timezone, &user.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -71,6 +74,15 @@ func (r *AuthRepository) UpdateYearlyGoal(ctx context.Context, userID string, go
 		goal, userID,
 	)
 	return err
+}
+
+func (r *AuthRepository) UpdateTimezone(ctx context.Context, userID, timezone string) error {
+    _, err := r.db.ExecContext(
+        ctx,
+        `UPDATE users SET timezone = $1 WHERE id = $2`,
+        timezone, userID,
+    )
+    return err
 }
 
 func (r *AuthRepository) CreateRefreshToken(ctx context.Context, userID, token, familyID string, expiresAt time.Time) error {

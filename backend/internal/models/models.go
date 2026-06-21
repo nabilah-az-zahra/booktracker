@@ -8,6 +8,7 @@ type User struct {
 	Email        string    `json:"email"`
 	PasswordHash string    `json:"-"`
 	YearlyGoal   int       `json:"yearly_goal"`
+	Timezone     string    `json:"timezone"`
 	CreatedAt    time.Time `json:"created_at"`
 }
 
@@ -86,11 +87,16 @@ type RegisterRequest struct {
 	Name     string `json:"name" binding:"required"`
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required,min=8,max=72"`
+	Timezone string `json:"timezone"`
 }
 
 type LoginRequest struct {
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required"`
+}
+
+type UpdateTimezoneRequest struct {
+    Timezone string `json:"timezone" binding:"required"`
 }
 
 type AuthResponse struct {

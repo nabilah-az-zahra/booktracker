@@ -46,6 +46,7 @@ const Register = () => {
                 name: formData.name,
                 email: formData.email,
                 password: formData.password,
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
             })
             login(res.data.token, res.data.user)
             navigate('/')
