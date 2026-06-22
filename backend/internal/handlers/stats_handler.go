@@ -30,10 +30,10 @@ func (h *StatsHandler) GetReadingHistory(c *gin.Context) {
 	userID := c.GetString("userID")
 	daysStr := c.DefaultQuery("days", "30")
 	days, err := strconv.Atoi(daysStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid days parameter"})
-		return
-	}
+	if err != nil || (days != 7 && days != 30 && days != 90) {
+        c.JSON(http.StatusBadRequest, gin.H{"message": "days must be 7, 30, or 90"})
+        return
+    }
 	history, err := h.statsService.GetReadingHistory(c.Request.Context(), userID, days)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})

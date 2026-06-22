@@ -3,10 +3,10 @@ package services
 import (
 	"booktracker/backend/internal/apperrors"
 	"booktracker/backend/internal/models"
+	redisclient "booktracker/backend/internal/redis"
 	"booktracker/backend/internal/repositories"
 	"context"
 	"fmt"
-	"log"
 )
 
 type SessionService struct {
@@ -50,33 +50,18 @@ func (s *SessionService) ResumeSession(ctx context.Context, sessionID, userID st
 }
 
 func (s *SessionService) StopSession(ctx context.Context, sessionID, userID string, duration, pagesRead int) (*models.ReadingSession, error) {
-	if pagesRead < 0 {
-		return nil, fmt.Errorf("%w: pages read cannot be negative", apperrors.ErrValidation)
-	}
-	if duration < 0 {
-		return nil, fmt.Errorf("%w: duration cannot be negative", apperrors.ErrValidation)
-	}
-
-	session, err := s.sessionRepo.StopSession(ctx, sessionID, userID, duration, pagesRead)
-	if err != nil {
-		return nil, err
-	}
-
-	progress, _ := s.sessionRepo.GetProgress(ctx, session.BookID, userID)
-	newPage := pagesRead
-	if progress != nil {
-		newPage = progress.CurrentPage + pagesRead
-	}
-	book, err := s.bookRepo.GetByID(ctx, session.BookID, userID)
-	if err == nil && book != nil && book.TotalPages > 0 && newPage > book.TotalPages {
-		newPage = book.TotalPages
-	}
-
-	if err := s.sessionRepo.UpdateProgress(ctx, session.BookID, userID, newPage); err != nil {
-		log.Printf("Warning: failed to update progress for book %s: %v", session.BookID, err)
-	}
-
-	return session, nil
+    if pagesRead < 0 {
+        return nil, fmt.Errorf("%w: pages read cannot be negative", apperrors.ErrValidation)
+    }
+    if duration < 0 {
+        return nil, fmt.Errorf("%w: duration cannot be negative", apperrors.ErrValidation)
+    }
+    session, err := s.sessionRepo.StopSessionWithProgress(ctx, sessionID, userID, duration, pagesRead)
+    if err != nil {
+        return nil, err
+    }
+    redisclient.Client.Del(ctx, "stats:"+userID)
+    return session, nil
 }
 
 func (s *SessionService) CancelSession(ctx context.Context, sessionID, userID string) error {

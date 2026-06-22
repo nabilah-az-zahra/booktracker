@@ -63,6 +63,11 @@ func main() {
 		AllowCredentials: true,
 	}))
 
+	r.GET("/api/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
+
+
 	api := r.Group("/api")
 	{
 		auth := api.Group("/auth")

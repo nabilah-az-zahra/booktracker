@@ -1,9 +1,12 @@
 package repositories
 
 import (
+	"booktracker/backend/internal/apperrors"
 	"booktracker/backend/internal/models"
 	"context"
 	"database/sql"
+	"errors"
+	"fmt"
 	"time"
 )
 
@@ -91,6 +94,64 @@ func (r *SessionRepository) StopSession(ctx context.Context, sessionID, userID s
 		return nil, err
 	}
 	return session, nil
+}
+
+func (r *SessionRepository) StopSessionWithProgress(ctx context.Context, sessionID, userID string, duration, pagesRead int) (*models.ReadingSession, error) {
+    tx, err := r.db.BeginTx(ctx, nil)
+    if err != nil {
+        return nil, err
+    }
+    defer tx.Rollback()
+
+    session := &models.ReadingSession{}
+    err = tx.QueryRowContext(
+        ctx,
+        `UPDATE reading_sessions 
+        SET status='completed', ended_at=NOW(), duration_seconds=$1, pages_read=$2
+        WHERE id=$3 AND user_id=$4
+        RETURNING id, book_id, user_id, started_at, ended_at, duration_seconds, pages_read, status, created_at`,
+        duration, pagesRead, sessionID, userID,
+    ).Scan(
+        &session.ID, &session.BookID, &session.UserID, &session.StartedAt,
+        &session.EndedAt, &session.DurationSeconds, &session.PagesRead,
+        &session.Status, &session.CreatedAt,
+    )
+    if err != nil {
+        if errors.Is(err, sql.ErrNoRows) {
+            return nil, fmt.Errorf("%w: session not found or unauthorized", apperrors.ErrNotFound)
+        }
+        return nil, err
+    }
+
+    _, err = tx.ExecContext(
+        ctx,
+        `INSERT INTO reading_progress (book_id, user_id, current_page, updated_at)
+        VALUES ($1, $2, 
+            (SELECT CASE 
+                WHEN total_pages > 0 THEN LEAST(COALESCE((SELECT current_page FROM reading_progress WHERE book_id=$1 AND user_id=$2), 0) + $3, total_pages)
+                ELSE COALESCE((SELECT current_page FROM reading_progress WHERE book_id=$1 AND user_id=$2), 0) + $3 END FROM books WHERE id=$1),
+            NOW()
+        )
+        ON CONFLICT (book_id, user_id)
+		DO UPDATE SET 
+			current_page = (
+				SELECT CASE 
+					WHEN total_pages > 0 THEN LEAST(reading_progress.current_page + $3, total_pages)
+					ELSE reading_progress.current_page + $3
+				END FROM books WHERE id = $1
+			),
+			updated_at = NOW()`,
+        session.BookID, userID, pagesRead,
+    )
+    if err != nil {
+        return nil, err
+    }
+
+    if err := tx.Commit(); err != nil {
+        return nil, err
+    }
+
+    return session, nil
 }
 
 func (r *SessionRepository) CancelSession(ctx context.Context, sessionID, userID string) error {

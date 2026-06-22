@@ -3,6 +3,7 @@ package services
 import (
 	"booktracker/backend/internal/apperrors"
 	"booktracker/backend/internal/models"
+	redisclient "booktracker/backend/internal/redis"
 	"booktracker/backend/internal/repositories"
 	"context"
 	"errors"
@@ -45,18 +46,25 @@ func (s *BookService) CreateBook(ctx context.Context, userID string, req models.
 }
 
 func (s *BookService) UpdateBook(ctx context.Context, bookID, userID string, req models.UpdateBookRequest) (*models.Book, error) {
-	return s.bookRepo.Update(ctx, bookID, userID, req)
+    book, err := s.bookRepo.Update(ctx, bookID, userID, req)
+    if err != nil {
+        return nil, err
+    }
+    redisclient.Client.Del(ctx, "stats:"+userID)
+    return book, nil
 }
 
 func (s *BookService) DeleteBook(ctx context.Context, bookID, userID string) error {
-	hasActiveSession, err := s.sessionRepo.HasActiveSession(ctx, bookID, userID)
-	if err != nil {
-		return err
-	}
-
-	if hasActiveSession {
-		return fmt.Errorf("%w: cannot delete a book with an active reading session", apperrors.ErrConflict)
-	}
-
-	return s.bookRepo.Delete(ctx, bookID, userID)
+    hasActiveSession, err := s.sessionRepo.HasActiveSession(ctx, bookID, userID)
+    if err != nil {
+        return err
+    }
+    if hasActiveSession {
+        return fmt.Errorf("%w: cannot delete a book with an active reading session", apperrors.ErrConflict)
+    }
+    if err := s.bookRepo.Delete(ctx, bookID, userID); err != nil {
+        return err
+    }
+    redisclient.Client.Del(ctx, "stats:"+userID)
+    return nil
 }

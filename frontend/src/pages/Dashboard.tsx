@@ -28,26 +28,28 @@ const Dashboard = () => {
     const [error, setError] = useState(false)
 
     const fetchData = async () => {
+        setLoading(true)
+        setError(false)
+
         try {
-            setError(false)
-            const [booksRes, statsRes] = await Promise.all([
+            const [booksRes, statsRes, sessionRes] = await Promise.all([
                 api.get('/api/books'),
                 api.get('/api/stats'),
+                api.get('/api/sessions/active').catch((err) => {
+                    console.warn('session fetch failed:', err)
+                    return null
+                }),
             ])
+
             setBooks(booksRes.data.data || [])
             setStats(statsRes.data.data)
+
+            setActiveSession(sessionRes?.data?.data || null)
         } catch (err) {
             console.error(err)
             setError(true)
         } finally {
             setLoading(false)
-        }
-
-        try {
-            const sessionRes = await api.get('/api/sessions/active')
-            setActiveSession(sessionRes.data.data)
-        } catch {
-            //
         }
     }
 
