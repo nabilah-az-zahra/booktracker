@@ -54,10 +54,10 @@ func (r *AuthRepository) GetUserByID(ctx context.Context, id string) (*models.Us
 	user := &models.User{}
 	err := r.db.QueryRowContext(
 		ctx,
-		`SELECT id, name, email, yearly_goal, created_at
+		`SELECT id, name, email, yearly_goal, timezone, created_at
 		FROM users WHERE id = $1`,
 		id,
-	).Scan(&user.ID, &user.Name, &user.Email, &user.YearlyGoal, &user.CreatedAt)
+	).Scan(&user.ID, &user.Name, &user.Email, &user.YearlyGoal, &user.Timezone, &user.CreatedAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
