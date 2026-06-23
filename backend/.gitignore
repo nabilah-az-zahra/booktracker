@@ -19,4 +19,4 @@ coverage.txt
 vendor/
 dist/
 tmp/
-*.log
+*.log.env.test

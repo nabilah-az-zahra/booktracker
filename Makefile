@@ -37,6 +37,15 @@ DB_HOST ?= localhost
 db:
 	psql -h $(DB_HOST) -U booktracker_user -d booktracker
 
+# Migration
+migrate:
+	cd backend/db && go run migrate.go
+
+migrate-test:
+	cd backend/db && TEST_POSTGRES_HOST=localhost TEST_POSTGRES_PORT=5433 \
+		TEST_POSTGRES_USER=booktracker TEST_POSTGRES_DB=booktracker_test \
+		go run migrate.go
+
 # Cleanup
 down:
 	docker compose down
