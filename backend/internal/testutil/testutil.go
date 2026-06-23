@@ -32,7 +32,7 @@ func NewTestDB(t *testing.T) *sql.DB {
 	}
 	port := os.Getenv("TEST_POSTGRES_PORT")
 	if port == "" {
-		port = "5433"
+		port = "5432"
 	}
 	user := os.Getenv("TEST_POSTGRES_USER")
 	if user == "" {
